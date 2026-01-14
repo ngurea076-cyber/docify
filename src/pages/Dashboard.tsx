@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,10 +17,16 @@ import {
   LogOut,
   Bell,
   ChevronDown,
-  TrendingUp,
-  Users,
   DollarSign,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const mockDocuments = [
   {
@@ -54,6 +60,19 @@ const mockDocuments = [
 
 const Dashboard = () => {
   const [search, setSearch] = useState("");
+  const { user, loading, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/login");
+    }
+  }, [user, loading, navigate]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   const stats = [
     { label: "Total Views", value: "12,847", change: "+23%", icon: Eye },
@@ -61,6 +80,24 @@ const Dashboard = () => {
     { label: "QR Scans", value: "856", change: "+45%", icon: QrCode },
     { label: "Donations", value: "$234", change: "+8%", icon: DollarSign },
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  const userInitials = user.user_metadata?.full_name
+    ? user.user_metadata.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase()
+    : user.email?.substring(0, 2).toUpperCase() || "U";
+
+  const userName = user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
 
   return (
     <div className="min-h-screen bg-background">
@@ -88,18 +125,31 @@ const Dashboard = () => {
 
           {/* User */}
           <div className="p-4 border-t border-border">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <span className="text-sm font-semibold text-primary">JD</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">John Doe</p>
-                <p className="text-xs text-muted-foreground truncate">john@example.com</p>
-              </div>
-              <button className="p-1 text-muted-foreground hover:text-foreground">
-                <ChevronDown className="h-4 w-4" />
-              </button>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-muted transition-colors">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="text-sm font-semibold text-primary">{userInitials}</span>
+                  </div>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="text-sm font-medium truncate">{userName}</p>
+                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                  </div>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </aside>
@@ -133,6 +183,12 @@ const Dashboard = () => {
         </header>
 
         <div className="p-6">
+          {/* Welcome */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold mb-1">Welcome back, {userName.split(" ")[0]}!</h2>
+            <p className="text-muted-foreground">Here's what's happening with your documents.</p>
+          </div>
+
           {/* Stats Grid */}
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {stats.map((stat) => (
