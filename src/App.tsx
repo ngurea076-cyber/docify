@@ -11,6 +11,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import Explore from "./pages/Explore";
 import Dashboard from "./pages/Dashboard";
 import DocumentView from "./pages/DocumentView";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/explore" element={<Explore />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/d/:id" element={<DocumentView />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
