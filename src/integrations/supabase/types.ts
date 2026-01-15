@@ -14,7 +14,110 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      documents: {
+        Row: {
+          allow_comments: boolean
+          allow_donations: boolean
+          allow_downloads: boolean
+          area: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          description: string | null
+          document_type: Database["public"]["Enums"]["document_type"]
+          download_count: number
+          file_name: string | null
+          file_size: number | null
+          file_url: string
+          id: string
+          is_public: boolean
+          title: string
+          updated_at: string
+          user_id: string
+          view_count: number
+        }
+        Insert: {
+          allow_comments?: boolean
+          allow_donations?: boolean
+          allow_downloads?: boolean
+          area?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          description?: string | null
+          document_type?: Database["public"]["Enums"]["document_type"]
+          download_count?: number
+          file_name?: string | null
+          file_size?: number | null
+          file_url: string
+          id?: string
+          is_public?: boolean
+          title: string
+          updated_at?: string
+          user_id: string
+          view_count?: number
+        }
+        Update: {
+          allow_comments?: boolean
+          allow_donations?: boolean
+          allow_downloads?: boolean
+          area?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          description?: string | null
+          document_type?: Database["public"]["Enums"]["document_type"]
+          download_count?: number
+          file_name?: string | null
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          is_public?: boolean
+          title?: string
+          updated_at?: string
+          user_id?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          mpesa_paybill: string | null
+          mpesa_till: string | null
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id: string
+          mpesa_paybill?: string | null
+          mpesa_till?: string | null
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          mpesa_paybill?: string | null
+          mpesa_till?: string | null
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +126,13 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      document_type:
+        | "menu"
+        | "brochure"
+        | "pricelist"
+        | "event"
+        | "notice"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +259,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      document_type: [
+        "menu",
+        "brochure",
+        "pricelist",
+        "event",
+        "notice",
+        "other",
+      ],
+    },
   },
 } as const

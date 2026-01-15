@@ -18,8 +18,10 @@ import {
   Bell,
   ChevronDown,
   DollarSign,
+  User,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,38 +29,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import UploadPDFModal from "@/components/upload/UploadPDFModal";
 
-const mockDocuments = [
-  {
-    id: "1",
-    title: "Company Brochure 2024",
-    views: 1234,
-    downloads: 89,
-    qrScans: 45,
-    visibility: "public",
-    createdAt: "2024-01-15",
-  },
-  {
-    id: "2",
-    title: "Product Catalog",
-    views: 567,
-    downloads: 34,
-    qrScans: 12,
-    visibility: "unlisted",
-    createdAt: "2024-01-10",
-  },
-  {
-    id: "3",
-    title: "Employee Handbook",
-    views: 89,
-    downloads: 5,
-    qrScans: 2,
-    visibility: "private",
-    createdAt: "2024-01-08",
-  },
-];
+interface Document {
+  id: string;
+  title: string;
+  view_count: number;
+  download_count: number;
+  is_public: boolean;
+  created_at: string;
+}
 
 const Dashboard = () => {
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [search, setSearch] = useState("");
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
@@ -68,6 +52,24 @@ const Dashboard = () => {
       navigate("/login");
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    if (user) {
+      fetchDocuments();
+    }
+  }, [user]);
+
+  const fetchDocuments = async () => {
+    const { data } = await supabase
+      .from("documents")
+      .select("id, title, view_count, download_count, is_public, created_at")
+      .eq("user_id", user?.id)
+      .order("created_at", { ascending: false });
+    
+    if (data) {
+      setDocuments(data);
+    }
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -139,7 +141,11 @@ const Dashboard = () => {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/profile")}>
+                  <User className="mr-2 h-4 w-4" />
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/profile")}>
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
                 </DropdownMenuItem>
@@ -174,7 +180,7 @@ const Dashboard = () => {
                 <Bell className="h-5 w-5" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full" />
               </Button>
-              <Button variant="hero" size="sm" className="gap-2">
+              <Button variant="hero" size="sm" className="gap-2" onClick={() => setUploadModalOpen(true)}>
                 <Upload className="h-4 w-4" />
                 Upload PDF
               </Button>
@@ -225,7 +231,7 @@ const Dashboard = () => {
                       className="pl-9 w-full sm:w-64"
                     />
                   </div>
-                  <Button variant="hero" size="sm" className="gap-2 shrink-0">
+                  <Button variant="hero" size="sm" className="gap-2 shrink-0" onClick={() => setUploadModalOpen(true)}>
                     <Plus className="h-4 w-4" />
                     Upload
                   </Button>
@@ -235,8 +241,9 @@ const Dashboard = () => {
 
             {/* Documents List */}
             <div className="divide-y divide-border">
-              {mockDocuments.map((doc) => (
-                <div
+              {documents.map((doc) => (
+                <Link
+                  to={`/d/${doc.id}`}
                   key={doc.id}
                   className="flex items-center gap-4 p-5 hover:bg-muted/30 transition-colors"
                 >
@@ -251,34 +258,28 @@ const Dashboard = () => {
                       <h3 className="font-medium truncate">{doc.title}</h3>
                       <span
                         className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          doc.visibility === "public"
+                          doc.is_public
                             ? "bg-green-100 text-green-700"
-                            : doc.visibility === "unlisted"
-                            ? "bg-yellow-100 text-yellow-700"
                             : "bg-gray-100 text-gray-700"
                         }`}
                       >
-                        {doc.visibility}
+                        {doc.is_public ? "public" : "private"}
                       </span>
                     </div>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Eye className="h-3.5 w-3.5" />
-                        {doc.views.toLocaleString()}
+                        {doc.view_count.toLocaleString()}
                       </span>
                       <span className="flex items-center gap-1">
                         <Download className="h-3.5 w-3.5" />
-                        {doc.downloads}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <QrCode className="h-3.5 w-3.5" />
-                        {doc.qrScans}
+                        {doc.download_count}
                       </span>
                     </div>
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.preventDefault()}>
                     <Button variant="ghost" size="icon" className="h-8 w-8">
                       <Link2 className="h-4 w-4" />
                     </Button>
@@ -289,12 +290,12 @@ const Dashboard = () => {
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
 
             {/* Empty State */}
-            {mockDocuments.length === 0 && (
+            {documents.length === 0 && (
               <div className="p-12 text-center">
                 <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <FileText className="h-8 w-8 text-muted-foreground" />
@@ -303,7 +304,7 @@ const Dashboard = () => {
                 <p className="text-muted-foreground mb-4">
                   Upload your first PDF to get started
                 </p>
-                <Button variant="hero">
+                <Button variant="hero" onClick={() => setUploadModalOpen(true)}>
                   <Upload className="h-4 w-4 mr-2" />
                   Upload PDF
                 </Button>
@@ -312,6 +313,12 @@ const Dashboard = () => {
           </div>
         </div>
       </main>
+
+      <UploadPDFModal 
+        open={uploadModalOpen} 
+        onOpenChange={setUploadModalOpen}
+        onSuccess={fetchDocuments}
+      />
     </div>
   );
 };
