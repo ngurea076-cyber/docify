@@ -118,11 +118,11 @@ const Dashboard = () => {
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1">
-            <NavItem icon={BarChart3} label="Dashboard" active />
-            <NavItem icon={FileText} label="Documents" />
-            <NavItem icon={BarChart3} label="Analytics" />
-            <NavItem icon={DollarSign} label="Donations" />
-            <NavItem icon={Settings} label="Settings" />
+            <NavItem icon={BarChart3} label="Dashboard" href="/dashboard" active />
+            <NavItem icon={FileText} label="Documents" href="/dashboard" />
+            <NavItem icon={BarChart3} label="Analytics" href="/dashboard" />
+            <NavItem icon={DollarSign} label="Donations" href="/dashboard" />
+            <NavItem icon={User} label="Profile" href="/profile" />
           </nav>
 
           {/* User */}
@@ -326,12 +326,14 @@ const Dashboard = () => {
 interface NavItemProps {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
+  href: string;
   active?: boolean;
 }
 
-const NavItem = ({ icon: Icon, label, active }: NavItemProps) => {
+const NavItem = ({ icon: Icon, label, href, active }: NavItemProps) => {
   return (
-    <button
+    <Link
+      to={href}
       className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
         active
           ? "bg-primary text-primary-foreground"
@@ -340,7 +342,7 @@ const NavItem = ({ icon: Icon, label, active }: NavItemProps) => {
     >
       <Icon className="h-5 w-5" />
       {label}
-    </button>
+    </Link>
   );
 };
 
