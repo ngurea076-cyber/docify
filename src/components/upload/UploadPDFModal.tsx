@@ -130,6 +130,21 @@ const UploadPDFModal = ({ open, onOpenChange, onSuccess }: UploadPDFModalProps) 
     setUploading(true);
     
     try {
+      // Ensure profile exists before creating document (foreign key requirement)
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (!existingProfile) {
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .insert({ id: user.id });
+        
+        if (profileError) throw profileError;
+      }
+
       // Upload file to storage
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
