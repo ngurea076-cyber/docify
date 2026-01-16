@@ -275,10 +275,18 @@ const Dashboard = () => {
               </div>
               <h1 className="text-xl font-semibold capitalize">{activeSection}</h1>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setActiveSection("profile")}
+                className={activeSection === "profile" ? "bg-muted" : ""}
+              >
+                <User className="h-5 w-5" />
               </Button>
               <Button variant="hero" size="sm" className="gap-2" onClick={() => setUploadModalOpen(true)}>
                 <Upload className="h-4 w-4" />
@@ -665,6 +673,7 @@ const Dashboard = () => {
         open={uploadModalOpen} 
         onOpenChange={setUploadModalOpen}
         onSuccess={fetchDocuments}
+        hasPaymentMethod={!!(profile?.mpesa_paybill || profile?.mpesa_till)}
       />
     </div>
   );

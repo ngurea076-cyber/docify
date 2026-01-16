@@ -15,6 +15,7 @@ interface UploadPDFModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  hasPaymentMethod?: boolean;
 }
 
 type DocumentType = "menu" | "brochure" | "pricelist" | "event" | "notice" | "other";
@@ -28,7 +29,7 @@ const documentTypeLabels: Record<DocumentType, string> = {
   other: "Other",
 };
 
-const UploadPDFModal = ({ open, onOpenChange, onSuccess }: UploadPDFModalProps) => {
+const UploadPDFModal = ({ open, onOpenChange, onSuccess, hasPaymentMethod = false }: UploadPDFModalProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -298,17 +299,20 @@ const UploadPDFModal = ({ open, onOpenChange, onSuccess }: UploadPDFModalProps) 
               />
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className={`flex items-center justify-between ${!hasPaymentMethod ? 'opacity-50' : ''}`}>
               <div>
                 <Label htmlFor="donations">Enable Donations</Label>
                 <p className="text-xs text-muted-foreground">
-                  Allow viewers to support you
+                  {hasPaymentMethod 
+                    ? "Allow viewers to support you" 
+                    : "Set up payment method in Profile first"}
                 </p>
               </div>
               <Switch
                 id="donations"
                 checked={allowDonations}
                 onCheckedChange={setAllowDonations}
+                disabled={!hasPaymentMethod}
               />
             </div>
 
