@@ -9,15 +9,12 @@ import {
   Eye,
   Heart,
   MessageSquare,
-  ChevronLeft,
-  ChevronRight,
-  ZoomIn,
-  ZoomOut,
   Copy,
   Check,
   ExternalLink,
   DollarSign,
 } from "lucide-react";
+import BookViewer from "@/components/document/BookViewer";
 
 const DocumentView = () => {
   const { id } = useParams();
@@ -78,57 +75,12 @@ const DocumentView = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-3 gap-8">
           {/* PDF Viewer */}
+          {/* Book Viewer */}
           <div className="lg:col-span-2">
-            <div className="bg-card rounded-2xl border border-border shadow-lg overflow-hidden">
-              {/* Toolbar */}
-              <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className="text-sm">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="icon">
-                    <ZoomOut className="h-4 w-4" />
-                  </Button>
-                  <span className="text-sm w-12 text-center">100%</span>
-                  <Button variant="ghost" size="icon">
-                    <ZoomIn className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* PDF Preview Area */}
-              <div className="aspect-[3/4] bg-muted flex items-center justify-center p-8">
-                <div className="bg-white shadow-xl rounded-lg w-full max-w-md aspect-[3/4] flex items-center justify-center">
-                  <div className="text-center p-8">
-                    <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
-                      <FileText className="h-10 w-10 text-primary" />
-                    </div>
-                    <h3 className="text-xl font-semibold mb-2">PDF Preview</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Page {currentPage} of {totalPages}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <BookViewer 
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
           </div>
 
           {/* Sidebar */}
