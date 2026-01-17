@@ -19,15 +19,11 @@ interface PageProps {
   pageNumber: number;
   width: number;
   height: number;
-  fileUrl?: string;
 }
 
-// Forward ref page component for react-pageflip
-const BookPage = forwardRef<HTMLDivElement, PageProps>(
-  ({ pageNumber, width, height, fileUrl }, ref) => {
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState(false);
-
+// Forward ref page component for react-pageflip (placeholder when no PDF)
+const PlaceholderPage = forwardRef<HTMLDivElement, PageProps>(
+  ({ pageNumber, width, height }, ref) => {
     return (
       <div
         ref={ref}
@@ -37,48 +33,65 @@ const BookPage = forwardRef<HTMLDivElement, PageProps>(
           height: `${height}px`,
         }}
       >
-        {fileUrl ? (
-          <>
-            {isLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            )}
-            {error ? (
-              <div className="text-center p-4">
-                <FileText className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Page {pageNumber}</p>
-              </div>
-            ) : (
-              <PDFPage
-                pageNumber={pageNumber}
-                width={width - 20}
-                onLoadSuccess={() => setIsLoading(false)}
-                onLoadError={() => {
-                  setIsLoading(false);
-                  setError(true);
-                }}
-                renderTextLayer={false}
-                renderAnnotationLayer={false}
-                className="pdf-page"
-              />
-            )}
-          </>
-        ) : (
-          <div className="text-center p-8">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <FileText className="h-8 w-8 text-primary" />
-            </div>
-            <h3 className="text-lg font-semibold mb-1">Page {pageNumber}</h3>
-            <p className="text-sm text-muted-foreground">PDF Preview</p>
+        <div className="text-center p-8">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <FileText className="h-8 w-8 text-primary" />
           </div>
+          <h3 className="text-lg font-semibold mb-1">Page {pageNumber}</h3>
+          <p className="text-sm text-muted-foreground">PDF Preview</p>
+        </div>
+      </div>
+    );
+  }
+);
+
+PlaceholderPage.displayName = "PlaceholderPage";
+
+// Forward ref page component for actual PDF rendering
+const PDFBookPage = forwardRef<HTMLDivElement, PageProps>(
+  ({ pageNumber, width, height }, ref) => {
+    const [isLoading, setIsLoading] = useState(true);
+    const [hasError, setHasError] = useState(false);
+
+    return (
+      <div
+        ref={ref}
+        className="book-page bg-white shadow-lg flex items-center justify-center overflow-hidden relative"
+        style={{
+          width: `${width}px`,
+          height: `${height}px`,
+        }}
+      >
+        {isLoading && !hasError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        )}
+        {hasError ? (
+          <div className="text-center p-4">
+            <FileText className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Page {pageNumber}</p>
+          </div>
+        ) : (
+          <PDFPage
+            pageNumber={pageNumber}
+            width={width - 20}
+            onLoadSuccess={() => setIsLoading(false)}
+            onLoadError={() => {
+              setIsLoading(false);
+              setHasError(true);
+            }}
+            renderTextLayer={false}
+            renderAnnotationLayer={false}
+            className="pdf-page"
+          />
         )}
       </div>
     );
   }
 );
 
-BookPage.displayName = "BookPage";
+PDFBookPage.displayName = "PDFBookPage";
 
 const BookViewer: React.FC<BookViewerProps> = ({ 
   fileUrl, 
@@ -92,6 +105,7 @@ const BookViewer: React.FC<BookViewerProps> = ({
   const [dimensions, setDimensions] = useState({ width: 300, height: 400 });
   const [zoom, setZoom] = useState(100);
   const [pdfLoaded, setPdfLoaded] = useState(false);
+  const [pdfError, setPdfError] = useState(false);
 
   // Calculate dimensions based on container size
   useEffect(() => {
@@ -130,6 +144,12 @@ const BookViewer: React.FC<BookViewerProps> = ({
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
     setPdfLoaded(true);
+    setPdfError(false);
+  };
+
+  const onDocumentLoadError = () => {
+    setPdfError(true);
+    setPdfLoaded(false);
   };
 
   const handleFlip = useCallback((e: any) => {
@@ -160,6 +180,86 @@ const BookViewer: React.FC<BookViewerProps> = ({
 
   // Generate pages for the book
   const pages = Array.from({ length: numPages }, (_, i) => i + 1);
+
+  // Render the flipbook with placeholder pages (no PDF)
+  const renderPlaceholderBook = () => (
+    <HTMLFlipBook
+      ref={flipBookRef}
+      width={dimensions.width}
+      height={dimensions.height}
+      size="stretch"
+      minWidth={200}
+      maxWidth={500}
+      minHeight={280}
+      maxHeight={700}
+      showCover={true}
+      mobileScrollSupport={true}
+      onFlip={handleFlip}
+      className="book-flipbook"
+      style={{}}
+      startPage={0}
+      drawShadow={true}
+      flippingTime={600}
+      usePortrait={false}
+      startZIndex={0}
+      autoSize={false}
+      maxShadowOpacity={0.5}
+      showPageCorners={true}
+      disableFlipByClick={false}
+      swipeDistance={30}
+      clickEventForward={true}
+      useMouseEvents={true}
+    >
+      {pages.map((pageNum) => (
+        <PlaceholderPage
+          key={pageNum}
+          pageNumber={pageNum}
+          width={dimensions.width}
+          height={dimensions.height}
+        />
+      ))}
+    </HTMLFlipBook>
+  );
+
+  // Render the flipbook with PDF pages
+  const renderPDFBook = () => (
+    <HTMLFlipBook
+      ref={flipBookRef}
+      width={dimensions.width}
+      height={dimensions.height}
+      size="stretch"
+      minWidth={200}
+      maxWidth={500}
+      minHeight={280}
+      maxHeight={700}
+      showCover={true}
+      mobileScrollSupport={true}
+      onFlip={handleFlip}
+      className="book-flipbook"
+      style={{}}
+      startPage={0}
+      drawShadow={true}
+      flippingTime={600}
+      usePortrait={false}
+      startZIndex={0}
+      autoSize={false}
+      maxShadowOpacity={0.5}
+      showPageCorners={true}
+      disableFlipByClick={false}
+      swipeDistance={30}
+      clickEventForward={true}
+      useMouseEvents={true}
+    >
+      {pages.map((pageNum) => (
+        <PDFBookPage
+          key={pageNum}
+          pageNumber={pageNum}
+          width={dimensions.width}
+          height={dimensions.height}
+        />
+      ))}
+    </HTMLFlipBook>
+  );
 
   return (
     <div className="bg-card rounded-2xl border border-border shadow-lg overflow-hidden">
@@ -206,62 +306,33 @@ const BookViewer: React.FC<BookViewerProps> = ({
         {/* Book shadow/binding effect */}
         <div className="absolute inset-y-0 left-1/2 w-4 -translate-x-1/2 bg-gradient-to-r from-black/10 via-black/20 to-black/10 z-10 pointer-events-none" />
         
-        {fileUrl && (
+        {/* PDF Document wrapper - provides context for PDF pages */}
+        {fileUrl ? (
           <Document
             file={fileUrl}
             onLoadSuccess={onDocumentLoadSuccess}
+            onLoadError={onDocumentLoadError}
             loading={
-              <div className="flex items-center justify-center h-full">
+              <div className="flex flex-col items-center justify-center h-full gap-4">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground">Loading PDF...</p>
+              </div>
+            }
+            error={
+              <div className="flex flex-col items-center justify-center h-full gap-4">
+                <FileText className="h-12 w-12 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Failed to load PDF</p>
               </div>
             }
           >
-            {/* Hidden, just for loading */}
+            {pdfLoaded && dimensions.width > 0 && renderPDFBook()}
           </Document>
+        ) : (
+          dimensions.width > 0 && renderPlaceholderBook()
         )}
 
-        {(pdfLoaded || !fileUrl) && dimensions.width > 0 && (
-          <HTMLFlipBook
-            ref={flipBookRef}
-            width={dimensions.width}
-            height={dimensions.height}
-            size="stretch"
-            minWidth={200}
-            maxWidth={500}
-            minHeight={280}
-            maxHeight={700}
-            showCover={true}
-            mobileScrollSupport={true}
-            onFlip={handleFlip}
-            className="book-flipbook"
-            style={{}}
-            startPage={0}
-            drawShadow={true}
-            flippingTime={600}
-            usePortrait={false}
-            startZIndex={0}
-            autoSize={false}
-            maxShadowOpacity={0.5}
-            showPageCorners={true}
-            disableFlipByClick={false}
-            swipeDistance={30}
-            clickEventForward={true}
-            useMouseEvents={true}
-          >
-            {pages.map((pageNum) => (
-              <BookPage
-                key={pageNum}
-                pageNumber={pageNum}
-                width={dimensions.width}
-                height={dimensions.height}
-                fileUrl={fileUrl}
-              />
-            ))}
-          </HTMLFlipBook>
-        )}
-
-        {!pdfLoaded && !fileUrl && (
-          <div className="text-center text-muted-foreground">
+        {!fileUrl && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-center text-muted-foreground text-sm">
             <p>Click and drag pages to flip, or use the navigation buttons</p>
           </div>
         )}
