@@ -3,7 +3,7 @@ import HTMLFlipBook from "react-pageflip";
 import { Document, Page as PDFPage, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, FileText, Loader2, BookOpen, File } from "lucide-react";
+import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, FileText, Loader2, BookOpen, File, Maximize, Minimize } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Toggle } from "@/components/ui/toggle";
@@ -103,6 +103,7 @@ const BookViewer: React.FC<BookViewerProps> = ({
 }) => {
   const flipBookRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const viewerRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [numPages, setNumPages] = useState<number>(initialTotalPages);
   const [dimensions, setDimensions] = useState({ width: 300, height: 400 });
@@ -111,8 +112,31 @@ const BookViewer: React.FC<BookViewerProps> = ({
   const [pdfError, setPdfError] = useState(false);
   const [isSinglePage, setIsSinglePage] = useState(false);
   const [goToPageInput, setGoToPageInput] = useState("");
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // Calculate dimensions based on container size and view mode
+  // Handle fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    if (!viewerRef.current) return;
+
+    try {
+      if (!document.fullscreenElement) {
+        await viewerRef.current.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (err) {
+      console.error("Fullscreen error:", err);
+    }
+  };
   useEffect(() => {
     const updateDimensions = () => {
       if (containerRef.current) {
@@ -280,7 +304,12 @@ const BookViewer: React.FC<BookViewerProps> = ({
   );
 
   return (
-    <div className="bg-card rounded-2xl border border-border shadow-lg overflow-hidden flex flex-col h-full">
+    <div 
+      ref={viewerRef}
+      className={`bg-card rounded-2xl border border-border shadow-lg overflow-hidden flex flex-col ${
+        isFullscreen ? "fixed inset-0 z-50 rounded-none" : "h-full"
+      }`}
+    >
       {/* Toolbar */}
       <div className="flex items-center justify-between p-3 border-b border-border bg-muted/30 flex-wrap gap-2">
         {/* Navigation */}
@@ -349,7 +378,7 @@ const BookViewer: React.FC<BookViewerProps> = ({
           </Toggle>
         </div>
 
-        {/* Zoom controls */}
+        {/* Zoom & Fullscreen controls */}
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={zoom <= 60} className="h-8 w-8">
             <ZoomOut className="h-4 w-4" />
@@ -358,6 +387,16 @@ const BookViewer: React.FC<BookViewerProps> = ({
           <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={zoom >= 150} className="h-8 w-8">
             <ZoomIn className="h-4 w-4" />
           </Button>
+          <div className="w-px h-6 bg-border mx-1" />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={toggleFullscreen} 
+            className="h-8 w-8"
+            aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          >
+            {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+          </Button>
         </div>
       </div>
 
@@ -365,7 +404,7 @@ const BookViewer: React.FC<BookViewerProps> = ({
       <div 
         ref={containerRef}
         className="relative bg-gradient-to-b from-muted/50 to-muted flex items-center justify-center flex-1 min-h-0"
-        style={{ minHeight: "400px" }}
+        style={{ minHeight: isFullscreen ? "auto" : "400px" }}
       >
         {/* Book shadow/binding effect - only show in double page mode */}
         {!isSinglePage && (
