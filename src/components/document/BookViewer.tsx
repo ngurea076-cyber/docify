@@ -3,8 +3,10 @@ import HTMLFlipBook from "react-pageflip";
 import { Document, Page as PDFPage, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, FileText, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, FileText, Loader2, BookOpen, File } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Toggle } from "@/components/ui/toggle";
 
 // Set up PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -75,7 +77,8 @@ const PDFBookPage = forwardRef<HTMLDivElement, PageProps>(
         ) : (
           <PDFPage
             pageNumber={pageNumber}
-            width={width - 20}
+            width={width - 10}
+            height={height - 10}
             onLoadSuccess={() => setIsLoading(false)}
             onLoadError={() => {
               setIsLoading(false);
@@ -106,17 +109,26 @@ const BookViewer: React.FC<BookViewerProps> = ({
   const [zoom, setZoom] = useState(100);
   const [pdfLoaded, setPdfLoaded] = useState(false);
   const [pdfError, setPdfError] = useState(false);
+  const [isSinglePage, setIsSinglePage] = useState(false);
+  const [goToPageInput, setGoToPageInput] = useState("");
 
-  // Calculate dimensions based on container size
+  // Calculate dimensions based on container size and view mode
   useEffect(() => {
     const updateDimensions = () => {
       if (containerRef.current) {
         const containerWidth = containerRef.current.offsetWidth;
         const containerHeight = containerRef.current.offsetHeight;
         
-        // Calculate page size (book shows 2 pages, so each page is half width)
-        const maxPageWidth = (containerWidth - 60) / 2;
-        const maxPageHeight = containerHeight - 40;
+        // Calculate page size based on mode
+        let maxPageWidth: number;
+        if (isSinglePage) {
+          // Single page mode - use more of the available width
+          maxPageWidth = containerWidth - 80;
+        } else {
+          // Double page mode - book shows 2 pages, so each page is half width
+          maxPageWidth = (containerWidth - 80) / 2;
+        }
+        const maxPageHeight = containerHeight - 20;
         
         // Maintain A4 aspect ratio (1:1.414)
         const aspectRatio = 1.414;
@@ -139,7 +151,7 @@ const BookViewer: React.FC<BookViewerProps> = ({
     updateDimensions();
     window.addEventListener("resize", updateDimensions);
     return () => window.removeEventListener("resize", updateDimensions);
-  }, [zoom]);
+  }, [zoom, isSinglePage]);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -170,6 +182,27 @@ const BookViewer: React.FC<BookViewerProps> = ({
     }
   };
 
+  const goToPage = (pageNum: number) => {
+    if (flipBookRef.current && pageNum >= 1 && pageNum <= numPages) {
+      flipBookRef.current.pageFlip().flip(pageNum - 1);
+      setCurrentPage(pageNum - 1);
+    }
+  };
+
+  const handleGoToPage = () => {
+    const pageNum = parseInt(goToPageInput, 10);
+    if (!isNaN(pageNum)) {
+      goToPage(pageNum);
+      setGoToPageInput("");
+    }
+  };
+
+  const handleGoToPageKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleGoToPage();
+    }
+  };
+
   const handleZoomIn = () => {
     setZoom(prev => Math.min(prev + 20, 150));
   };
@@ -181,35 +214,46 @@ const BookViewer: React.FC<BookViewerProps> = ({
   // Generate pages for the book
   const pages = Array.from({ length: numPages }, (_, i) => i + 1);
 
+  // Get current page display text
+  const getPageDisplayText = () => {
+    if (isSinglePage) {
+      return `Page ${currentPage + 1} of ${numPages}`;
+    }
+    return `Page ${currentPage + 1} - ${Math.min(currentPage + 2, numPages)} of ${numPages}`;
+  };
+
+  // Common flipbook props
+  const getFlipBookProps = () => ({
+    ref: flipBookRef,
+    width: dimensions.width,
+    height: dimensions.height,
+    size: "stretch" as const,
+    minWidth: 200,
+    maxWidth: isSinglePage ? 800 : 500,
+    minHeight: 280,
+    maxHeight: 900,
+    showCover: true,
+    mobileScrollSupport: true,
+    onFlip: handleFlip,
+    className: "book-flipbook",
+    style: {},
+    startPage: 0,
+    drawShadow: true,
+    flippingTime: 600,
+    usePortrait: isSinglePage,
+    startZIndex: 0,
+    autoSize: false,
+    maxShadowOpacity: 0.5,
+    showPageCorners: true,
+    disableFlipByClick: false,
+    swipeDistance: 30,
+    clickEventForward: true,
+    useMouseEvents: true,
+  });
+
   // Render the flipbook with placeholder pages (no PDF)
   const renderPlaceholderBook = () => (
-    <HTMLFlipBook
-      ref={flipBookRef}
-      width={dimensions.width}
-      height={dimensions.height}
-      size="stretch"
-      minWidth={200}
-      maxWidth={500}
-      minHeight={280}
-      maxHeight={700}
-      showCover={true}
-      mobileScrollSupport={true}
-      onFlip={handleFlip}
-      className="book-flipbook"
-      style={{}}
-      startPage={0}
-      drawShadow={true}
-      flippingTime={600}
-      usePortrait={false}
-      startZIndex={0}
-      autoSize={false}
-      maxShadowOpacity={0.5}
-      showPageCorners={true}
-      disableFlipByClick={false}
-      swipeDistance={30}
-      clickEventForward={true}
-      useMouseEvents={true}
-    >
+    <HTMLFlipBook {...getFlipBookProps()}>
       {pages.map((pageNum) => (
         <PlaceholderPage
           key={pageNum}
@@ -223,33 +267,7 @@ const BookViewer: React.FC<BookViewerProps> = ({
 
   // Render the flipbook with PDF pages
   const renderPDFBook = () => (
-    <HTMLFlipBook
-      ref={flipBookRef}
-      width={dimensions.width}
-      height={dimensions.height}
-      size="stretch"
-      minWidth={200}
-      maxWidth={500}
-      minHeight={280}
-      maxHeight={700}
-      showCover={true}
-      mobileScrollSupport={true}
-      onFlip={handleFlip}
-      className="book-flipbook"
-      style={{}}
-      startPage={0}
-      drawShadow={true}
-      flippingTime={600}
-      usePortrait={false}
-      startZIndex={0}
-      autoSize={false}
-      maxShadowOpacity={0.5}
-      showPageCorners={true}
-      disableFlipByClick={false}
-      swipeDistance={30}
-      clickEventForward={true}
-      useMouseEvents={true}
-    >
+    <HTMLFlipBook {...getFlipBookProps()}>
       {pages.map((pageNum) => (
         <PDFBookPage
           key={pageNum}
@@ -262,49 +280,97 @@ const BookViewer: React.FC<BookViewerProps> = ({
   );
 
   return (
-    <div className="bg-card rounded-2xl border border-border shadow-lg overflow-hidden">
+    <div className="bg-card rounded-2xl border border-border shadow-lg overflow-hidden flex flex-col h-full">
       {/* Toolbar */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between p-3 border-b border-border bg-muted/30 flex-wrap gap-2">
+        {/* Navigation */}
+        <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="icon"
             onClick={goToPrevPage}
             disabled={currentPage === 0}
+            className="h-8 w-8"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="text-sm min-w-[100px] text-center">
-            Page {currentPage + 1} - {Math.min(currentPage + 2, numPages)} of {numPages}
+          <span className="text-sm min-w-[80px] text-center whitespace-nowrap">
+            {getPageDisplayText()}
           </span>
           <Button
             variant="ghost"
             size="icon"
             onClick={goToNextPage}
-            disabled={currentPage >= numPages - 2}
+            disabled={isSinglePage ? currentPage >= numPages - 1 : currentPage >= numPages - 2}
+            className="h-8 w-8"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={zoom <= 60}>
+
+        {/* Go to page */}
+        <div className="flex items-center gap-1">
+          <Input
+            type="number"
+            placeholder="Go to..."
+            value={goToPageInput}
+            onChange={(e) => setGoToPageInput(e.target.value)}
+            onKeyDown={handleGoToPageKeyDown}
+            className="w-20 h-8 text-sm"
+            min={1}
+            max={numPages}
+          />
+          <Button variant="outline" size="sm" onClick={handleGoToPage} className="h-8 px-2">
+            Go
+          </Button>
+        </div>
+
+        {/* View mode toggle */}
+        <div className="flex items-center gap-1 border rounded-lg p-0.5 bg-muted/50">
+          <Toggle
+            pressed={isSinglePage}
+            onPressedChange={() => setIsSinglePage(true)}
+            size="sm"
+            className="h-7 px-2 data-[state=on]:bg-background"
+            aria-label="Single page view"
+          >
+            <File className="h-4 w-4 mr-1" />
+            <span className="text-xs">Single</span>
+          </Toggle>
+          <Toggle
+            pressed={!isSinglePage}
+            onPressedChange={() => setIsSinglePage(false)}
+            size="sm"
+            className="h-7 px-2 data-[state=on]:bg-background"
+            aria-label="Double page view"
+          >
+            <BookOpen className="h-4 w-4 mr-1" />
+            <span className="text-xs">Double</span>
+          </Toggle>
+        </div>
+
+        {/* Zoom controls */}
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={zoom <= 60} className="h-8 w-8">
             <ZoomOut className="h-4 w-4" />
           </Button>
-          <span className="text-sm w-12 text-center">{zoom}%</span>
-          <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={zoom >= 150}>
+          <span className="text-sm w-10 text-center">{zoom}%</span>
+          <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={zoom >= 150} className="h-8 w-8">
             <ZoomIn className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      {/* Book View Area */}
+      {/* Book View Area - Maximized */}
       <div 
         ref={containerRef}
-        className="relative bg-gradient-to-b from-muted/50 to-muted flex items-center justify-center p-6"
-        style={{ minHeight: "500px", height: "calc(100vh - 300px)", maxHeight: "700px" }}
+        className="relative bg-gradient-to-b from-muted/50 to-muted flex items-center justify-center flex-1 min-h-0"
+        style={{ minHeight: "400px" }}
       >
-        {/* Book shadow/binding effect */}
-        <div className="absolute inset-y-0 left-1/2 w-4 -translate-x-1/2 bg-gradient-to-r from-black/10 via-black/20 to-black/10 z-10 pointer-events-none" />
+        {/* Book shadow/binding effect - only show in double page mode */}
+        {!isSinglePage && (
+          <div className="absolute inset-y-0 left-1/2 w-4 -translate-x-1/2 bg-gradient-to-r from-black/10 via-black/20 to-black/10 z-10 pointer-events-none" />
+        )}
         
         {/* PDF Document wrapper - provides context for PDF pages */}
         {fileUrl ? (
@@ -339,19 +405,25 @@ const BookViewer: React.FC<BookViewerProps> = ({
       </div>
 
       {/* Page thumbnails indicator */}
-      <div className="flex items-center justify-center gap-1 p-3 border-t border-border bg-muted/30">
-        {pages.slice(0, 10).map((pageNum) => (
-          <div
+      <div className="flex items-center justify-center gap-1 p-2 border-t border-border bg-muted/30">
+        {pages.slice(0, Math.min(20, numPages)).map((pageNum) => (
+          <button
             key={pageNum}
-            className={`w-2 h-2 rounded-full transition-colors ${
-              pageNum >= currentPage + 1 && pageNum <= currentPage + 2
-                ? "bg-primary"
-                : "bg-muted-foreground/30"
+            onClick={() => goToPage(pageNum)}
+            className={`w-2 h-2 rounded-full transition-colors hover:scale-125 ${
+              isSinglePage
+                ? pageNum === currentPage + 1
+                  ? "bg-primary"
+                  : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                : pageNum >= currentPage + 1 && pageNum <= currentPage + 2
+                  ? "bg-primary"
+                  : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
             }`}
+            aria-label={`Go to page ${pageNum}`}
           />
         ))}
-        {numPages > 10 && (
-          <span className="text-xs text-muted-foreground ml-2">+{numPages - 10} more</span>
+        {numPages > 20 && (
+          <span className="text-xs text-muted-foreground ml-2">+{numPages - 20} more</span>
         )}
       </div>
     </div>

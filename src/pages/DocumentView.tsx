@@ -237,10 +237,10 @@ const DocumentView = () => {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Book Viewer */}
-          <div className="lg:col-span-2">
+      <div className="container mx-auto px-4 py-4">
+        <div className="grid lg:grid-cols-4 gap-6">
+          {/* Book Viewer - Takes more space */}
+          <div className="lg:col-span-3" style={{ minHeight: "calc(100vh - 200px)" }}>
             <BookViewer 
               fileUrl={pdfUrl || undefined}
               onPageChange={setCurrentPage}
