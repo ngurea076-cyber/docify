@@ -237,57 +237,50 @@ const DocumentView = () => {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-4">
-        <div className="grid lg:grid-cols-4 gap-6">
-          {/* Book Viewer - Takes more space */}
-          <div className="lg:col-span-3" style={{ minHeight: "calc(100vh - 200px)" }}>
-            <BookViewer 
-              fileUrl={pdfUrl || undefined}
-              onPageChange={setCurrentPage}
-            />
-          </div>
+      <div className="w-[90vw] mx-auto py-4">
+        {/* Book Viewer - Full width focus */}
+        <div style={{ minHeight: "calc(100vh - 180px)" }}>
+          <BookViewer 
+            fileUrl={pdfUrl || undefined}
+            onPageChange={setCurrentPage}
+          />
+        </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-
-            {/* Donate */}
+        {/* Action bar for donations/comments */}
+        {(document.allow_donations || document.allow_comments) && (
+          <div className="mt-4 flex flex-wrap gap-4 justify-center">
             {document.allow_donations && (
-              <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-2xl border border-accent/20 p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center">
-                    <Heart className="h-5 w-5 text-accent" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Support the creator</h3>
-                    <p className="text-sm text-muted-foreground">Show appreciation with a donation</p>
-                  </div>
+              <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-2xl border border-accent/20 p-4 flex items-center gap-4 max-w-md">
+                <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center shrink-0">
+                  <Heart className="h-5 w-5 text-accent" />
                 </div>
-                <Button variant="hero" className="w-full gap-2">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-sm">Support the creator</h3>
+                  <p className="text-xs text-muted-foreground">Show appreciation with a donation</p>
+                </div>
+                <Button variant="hero" size="sm" className="gap-2 shrink-0">
                   <DollarSign className="h-4 w-4" />
                   Donate
                 </Button>
               </div>
             )}
 
-            {/* Comments Preview */}
             {document.allow_comments && (
-              <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5" />
-                    Comments
-                  </h3>
+              <div className="bg-card rounded-2xl border border-border p-4 flex items-center gap-4 max-w-md">
+                <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                  <MessageSquare className="h-5 w-5" />
                 </div>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Join the conversation about this document.
-                </p>
-                <Button variant="outline" className="w-full">
-                  View Comments
+                <div className="flex-1">
+                  <h3 className="font-semibold text-sm">Comments</h3>
+                  <p className="text-xs text-muted-foreground">Join the conversation</p>
+                </div>
+                <Button variant="outline" size="sm" className="shrink-0">
+                  View
                 </Button>
               </div>
             )}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

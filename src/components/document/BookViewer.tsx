@@ -137,28 +137,38 @@ const BookViewer: React.FC<BookViewerProps> = ({
       console.error("Fullscreen error:", err);
     }
   };
+  // Calculate dimensions based on container size and view mode - fit content without cropping
   useEffect(() => {
     const updateDimensions = () => {
       if (containerRef.current) {
         const containerWidth = containerRef.current.offsetWidth;
         const containerHeight = containerRef.current.offsetHeight;
         
-        // Calculate page size based on mode
-        let maxPageWidth: number;
-        if (isSinglePage) {
-          // Single page mode - use more of the available width
-          maxPageWidth = containerWidth - 80;
-        } else {
-          // Double page mode - book shows 2 pages, so each page is half width
-          maxPageWidth = (containerWidth - 80) / 2;
-        }
-        const maxPageHeight = containerHeight - 20;
+        // A4 aspect ratios
+        const portraitAspect = 1.414; // height / width for portrait
+        const landscapeAspect = 1 / 1.414; // height / width for landscape
         
-        // Maintain A4 aspect ratio (1:1.414)
-        const aspectRatio = 1.414;
+        // Use portrait A4 by default
+        const aspectRatio = portraitAspect;
+        
+        // Calculate available space for pages
+        const padding = 40; // minimal padding
+        let maxPageWidth: number;
+        let maxPageHeight = containerHeight - padding;
+        
+        if (isSinglePage) {
+          // Single page mode - center single page
+          maxPageWidth = containerWidth - padding;
+        } else {
+          // Double page mode - two pages side by side
+          maxPageWidth = (containerWidth - padding) / 2;
+        }
+        
+        // Calculate dimensions that fit within container while maintaining aspect ratio
         let width = maxPageWidth;
         let height = width * aspectRatio;
         
+        // If height exceeds available space, constrain by height instead
         if (height > maxPageHeight) {
           height = maxPageHeight;
           width = height / aspectRatio;
@@ -168,14 +178,17 @@ const BookViewer: React.FC<BookViewerProps> = ({
         const scaledWidth = (width * zoom) / 100;
         const scaledHeight = (height * zoom) / 100;
 
-        setDimensions({ width: Math.floor(scaledWidth), height: Math.floor(scaledHeight) });
+        setDimensions({ 
+          width: Math.floor(Math.max(scaledWidth, 200)), 
+          height: Math.floor(Math.max(scaledHeight, 280)) 
+        });
       }
     };
 
     updateDimensions();
     window.addEventListener("resize", updateDimensions);
     return () => window.removeEventListener("resize", updateDimensions);
-  }, [zoom, isSinglePage]);
+  }, [zoom, isSinglePage, isFullscreen]);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -246,16 +259,16 @@ const BookViewer: React.FC<BookViewerProps> = ({
     return `Page ${currentPage + 1} - ${Math.min(currentPage + 2, numPages)} of ${numPages}`;
   };
 
-  // Common flipbook props
+  // Common flipbook props - allow larger sizes for 90vw layout
   const getFlipBookProps = () => ({
     ref: flipBookRef,
     width: dimensions.width,
     height: dimensions.height,
     size: "stretch" as const,
     minWidth: 200,
-    maxWidth: isSinglePage ? 800 : 500,
+    maxWidth: isSinglePage ? 1200 : 800,
     minHeight: 280,
-    maxHeight: 900,
+    maxHeight: 1400,
     showCover: true,
     mobileScrollSupport: true,
     onFlip: handleFlip,
