@@ -24,6 +24,8 @@ import {
   User,
   CreditCard,
   Loader2,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,15 +37,36 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import UploadPDFModal from "@/components/upload/UploadPDFModal";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import UploadPDFModal, { DocumentData } from "@/components/upload/UploadPDFModal";
+import QRCodeModal from "@/components/document/QRCodeModal";
 
 interface Document {
   id: string;
   title: string;
+  description: string | null;
   view_count: number;
   download_count: number;
   is_public: boolean;
   created_at: string;
+  allow_downloads: boolean;
+  allow_donations: boolean;
+  allow_comments: boolean;
+  document_type: "menu" | "brochure" | "pricelist" | "event" | "notice" | "other";
+  country: string | null;
+  city: string | null;
+  area: string | null;
+  file_name: string | null;
+  file_size: number | null;
 }
 
 interface Profile {
@@ -61,6 +84,19 @@ const Dashboard = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
+  
+  // QR Code modal state
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [selectedDocForQR, setSelectedDocForQR] = useState<{ id: string; title: string } | null>(null);
+  
+  // Edit modal state
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingDocument, setEditingDocument] = useState<DocumentData | null>(null);
+  
+  // Delete confirmation state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingDocument, setDeletingDocument] = useState<{ id: string; title: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Profile form states
   const [username, setUsername] = useState("");
@@ -87,7 +123,7 @@ const Dashboard = () => {
   const fetchDocuments = async () => {
     const { data } = await supabase
       .from("documents")
-      .select("id, title, view_count, download_count, is_public, created_at")
+      .select("id, title, description, view_count, download_count, is_public, created_at, allow_downloads, allow_donations, allow_comments, document_type, country, city, area, file_name, file_size")
       .eq("user_id", user?.id)
       .order("created_at", { ascending: false });
     
@@ -155,6 +191,70 @@ const Dashboard = () => {
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
+  };
+
+  const handleCopyLink = (docId: string) => {
+    const url = `${window.location.origin}/d/${docId}`;
+    navigator.clipboard.writeText(url);
+    toast({
+      title: "Link copied!",
+      description: "Document link copied to clipboard",
+    });
+  };
+
+  const handleOpenQR = (doc: { id: string; title: string }) => {
+    setSelectedDocForQR(doc);
+    setQrModalOpen(true);
+  };
+
+  const handleEditDocument = (doc: Document) => {
+    setEditingDocument({
+      id: doc.id,
+      title: doc.title,
+      description: doc.description,
+      allow_downloads: doc.allow_downloads,
+      allow_donations: doc.allow_donations,
+      allow_comments: doc.allow_comments,
+      is_public: doc.is_public,
+      document_type: doc.document_type,
+      country: doc.country,
+      city: doc.city,
+      area: doc.area,
+      file_name: doc.file_name,
+      file_size: doc.file_size,
+    });
+    setEditModalOpen(true);
+  };
+
+  const handleDeleteDocument = async () => {
+    if (!deletingDocument) return;
+    
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("documents")
+        .delete()
+        .eq("id", deletingDocument.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Document deleted",
+        description: `"${deletingDocument.title}" has been removed`,
+      });
+      
+      fetchDocuments();
+    } catch (error: any) {
+      toast({
+        title: "Delete failed",
+        description: error.message || "Failed to delete document",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setDeletingDocument(null);
+    }
   };
 
   const stats = [
@@ -385,15 +485,46 @@ const Dashboard = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.preventDefault()}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={() => handleCopyLink(doc.id)}
+                        >
                           <Link2 className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={() => handleOpenQR({ id: doc.id, title: doc.title })}
+                        >
                           <QrCode className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEditDocument(doc)}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={() => {
+                                setDeletingDocument({ id: doc.id, title: doc.title });
+                                setDeleteDialogOpen(true);
+                              }}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </Link>
                   ))}
@@ -476,15 +607,46 @@ const Dashboard = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.preventDefault()}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={() => handleCopyLink(doc.id)}
+                      >
                         <Link2 className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={() => handleOpenQR({ id: doc.id, title: doc.title })}
+                      >
                         <QrCode className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEditDocument(doc)}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => {
+                              setDeletingDocument({ id: doc.id, title: doc.title });
+                              setDeleteDialogOpen(true);
+                            }}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </Link>
                 ))}
@@ -675,6 +837,55 @@ const Dashboard = () => {
         onSuccess={fetchDocuments}
         hasPaymentMethod={!!(profile?.mpesa_paybill || profile?.mpesa_till)}
       />
+
+      {/* Edit Document Modal */}
+      <UploadPDFModal 
+        open={editModalOpen} 
+        onOpenChange={setEditModalOpen}
+        onSuccess={fetchDocuments}
+        hasPaymentMethod={!!(profile?.mpesa_paybill || profile?.mpesa_till)}
+        editMode={true}
+        documentData={editingDocument}
+      />
+
+      {/* QR Code Modal */}
+      {selectedDocForQR && (
+        <QRCodeModal
+          open={qrModalOpen}
+          onOpenChange={setQrModalOpen}
+          documentId={selectedDocForQR.id}
+          documentTitle={selectedDocForQR.title}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Document</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deletingDocument?.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteDocument}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
