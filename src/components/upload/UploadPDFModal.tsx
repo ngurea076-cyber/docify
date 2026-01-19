@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -9,13 +9,31 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileText, Loader2, X } from "lucide-react";
+import { Upload, FileText, Loader2, X, Save } from "lucide-react";
+
+export interface DocumentData {
+  id: string;
+  title: string;
+  description: string | null;
+  allow_downloads: boolean;
+  allow_donations: boolean;
+  allow_comments: boolean;
+  is_public: boolean;
+  document_type: DocumentType;
+  country: string | null;
+  city: string | null;
+  area: string | null;
+  file_name: string | null;
+  file_size: number | null;
+}
 
 interface UploadPDFModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
   hasPaymentMethod?: boolean;
+  editMode?: boolean;
+  documentData?: DocumentData | null;
 }
 
 type DocumentType = "menu" | "brochure" | "pricelist" | "event" | "notice" | "other";
@@ -29,7 +47,14 @@ const documentTypeLabels: Record<DocumentType, string> = {
   other: "Other",
 };
 
-const UploadPDFModal = ({ open, onOpenChange, onSuccess, hasPaymentMethod = false }: UploadPDFModalProps) => {
+const UploadPDFModal = ({ 
+  open, 
+  onOpenChange, 
+  onSuccess, 
+  hasPaymentMethod = false,
+  editMode = false,
+  documentData = null
+}: UploadPDFModalProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -62,6 +87,24 @@ const UploadPDFModal = ({ open, onOpenChange, onSuccess, hasPaymentMethod = fals
     setCity("");
     setArea("");
   };
+
+  // Populate form when in edit mode
+  useEffect(() => {
+    if (editMode && documentData && open) {
+      setTitle(documentData.title);
+      setDescription(documentData.description || "");
+      setAllowDownloads(documentData.allow_downloads);
+      setAllowDonations(documentData.allow_donations);
+      setAllowComments(documentData.allow_comments);
+      setIsPublic(documentData.is_public);
+      setDocumentType(documentData.document_type);
+      setCountry(documentData.country || "");
+      setCity(documentData.city || "");
+      setArea(documentData.area || "");
+    } else if (!open) {
+      resetForm();
+    }
+  }, [editMode, documentData, open]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -108,7 +151,10 @@ const UploadPDFModal = ({ open, onOpenChange, onSuccess, hasPaymentMethod = fals
   };
 
   const handleUpload = async () => {
-    if (!user || !file) return;
+    if (!user) return;
+    
+    // For edit mode, file is optional
+    if (!editMode && !file) return;
     
     if (!title.trim()) {
       toast({
@@ -131,65 +177,92 @@ const UploadPDFModal = ({ open, onOpenChange, onSuccess, hasPaymentMethod = fals
     setUploading(true);
     
     try {
-      // Ensure profile exists before creating document (foreign key requirement)
-      const { data: existingProfile } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("id", user.id)
-        .maybeSingle();
+      if (editMode && documentData) {
+        // Update existing document
+        const { error: dbError } = await supabase
+          .from("documents")
+          .update({
+            title: title.trim(),
+            description: description.trim() || null,
+            allow_downloads: allowDownloads,
+            allow_donations: allowDonations,
+            allow_comments: allowComments,
+            is_public: isPublic,
+            document_type: documentType,
+            country: isPublic ? country.trim() || null : null,
+            city: isPublic ? city.trim() || null : null,
+            area: isPublic ? area.trim() || null : null,
+          })
+          .eq("id", documentData.id);
 
-      if (!existingProfile) {
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .insert({ id: user.id });
-        
-        if (profileError) throw profileError;
-      }
+        if (dbError) throw dbError;
 
-      // Upload file to storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from("pdfs")
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      // Create document record
-      const { error: dbError } = await supabase
-        .from("documents")
-        .insert({
-          user_id: user.id,
-          title: title.trim(),
-          description: description.trim() || null,
-          file_url: fileName,
-          file_name: file.name,
-          file_size: file.size,
-          allow_downloads: allowDownloads,
-          allow_donations: allowDonations,
-          allow_comments: allowComments,
-          is_public: isPublic,
-          document_type: documentType,
-          country: isPublic ? country.trim() || null : null,
-          city: isPublic ? city.trim() || null : null,
-          area: isPublic ? area.trim() || null : null,
+        toast({
+          title: "Success",
+          description: "Document updated successfully",
         });
+      } else {
+        // Create new document (existing logic)
+        // Ensure profile exists before creating document (foreign key requirement)
+        const { data: existingProfile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("id", user.id)
+          .maybeSingle();
 
-      if (dbError) throw dbError;
+        if (!existingProfile) {
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .insert({ id: user.id });
+          
+          if (profileError) throw profileError;
+        }
 
-      toast({
-        title: "Success",
-        description: "Document uploaded successfully",
-      });
+        // Upload file to storage
+        const fileExt = file!.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from("pdfs")
+          .upload(fileName, file!);
+
+        if (uploadError) throw uploadError;
+
+        // Create document record
+        const { error: dbError } = await supabase
+          .from("documents")
+          .insert({
+            user_id: user.id,
+            title: title.trim(),
+            description: description.trim() || null,
+            file_url: fileName,
+            file_name: file!.name,
+            file_size: file!.size,
+            allow_downloads: allowDownloads,
+            allow_donations: allowDonations,
+            allow_comments: allowComments,
+            is_public: isPublic,
+            document_type: documentType,
+            country: isPublic ? country.trim() || null : null,
+            city: isPublic ? city.trim() || null : null,
+            area: isPublic ? area.trim() || null : null,
+          });
+
+        if (dbError) throw dbError;
+
+        toast({
+          title: "Success",
+          description: "Document uploaded successfully",
+        });
+      }
 
       resetForm();
       onOpenChange(false);
       onSuccess?.();
     } catch (error: any) {
       toast({
-        title: "Upload failed",
-        description: error.message || "Failed to upload document",
+        title: editMode ? "Update failed" : "Upload failed",
+        description: error.message || `Failed to ${editMode ? 'update' : 'upload'} document`,
         variant: "destructive",
       });
     } finally {
@@ -201,64 +274,81 @@ const UploadPDFModal = ({ open, onOpenChange, onSuccess, hasPaymentMethod = fals
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Upload PDF Document</DialogTitle>
+          <DialogTitle>{editMode ? "Edit Document" : "Upload PDF Document"}</DialogTitle>
           <DialogDescription>
-            Upload a PDF file and configure its settings
+            {editMode ? "Update your document settings" : "Upload a PDF file and configure its settings"}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* File Upload Area */}
-          <div
-            className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
-              dragActive
-                ? "border-primary bg-primary/5"
-                : file
-                ? "border-accent bg-accent/10"
-                : "border-border hover:border-primary/50"
-            }`}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-          >
-            {file ? (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <FileText className="h-8 w-8 text-primary" />
-                  <div>
-                    <p className="font-medium text-foreground">{file.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {(file.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
+          {/* File Upload Area - only show for new uploads */}
+          {!editMode && (
+            <div
+              className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
+                dragActive
+                  ? "border-primary bg-primary/5"
+                  : file
+                  ? "border-accent bg-accent/10"
+                  : "border-border hover:border-primary/50"
+              }`}
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+            >
+              {file ? (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <FileText className="h-8 w-8 text-primary" />
+                    <div>
+                      <p className="font-medium text-foreground">{file.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {(file.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setFile(null)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setFile(null)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+              ) : (
+                <div className="text-center">
+                  <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-foreground font-medium mb-1">
+                    Drag and drop your PDF here
+                  </p>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    or click to browse
+                  </p>
+                  <input
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    onChange={handleFileChange}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Show current file info in edit mode */}
+          {editMode && documentData?.file_name && (
+            <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg border">
+              <FileText className="h-8 w-8 text-primary" />
+              <div>
+                <p className="font-medium text-foreground">{documentData.file_name}</p>
+                {documentData.file_size && (
+                  <p className="text-sm text-muted-foreground">
+                    {(documentData.file_size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                )}
               </div>
-            ) : (
-              <div className="text-center">
-                <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                <p className="text-foreground font-medium mb-1">
-                  Drag and drop your PDF here
-                </p>
-                <p className="text-sm text-muted-foreground mb-3">
-                  or click to browse
-                </p>
-                <input
-                  type="file"
-                  accept=".pdf,application/pdf"
-                  onChange={handleFileChange}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                />
-              </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Title */}
           <div className="space-y-2">
@@ -403,21 +493,21 @@ const UploadPDFModal = ({ open, onOpenChange, onSuccess, hasPaymentMethod = fals
             </div>
           )}
 
-          {/* Upload Button */}
+          {/* Upload/Save Button */}
           <Button
             onClick={handleUpload}
-            disabled={!file || uploading}
+            disabled={(!editMode && !file) || uploading}
             className="w-full"
           >
             {uploading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Uploading...
+                {editMode ? "Saving..." : "Uploading..."}
               </>
             ) : (
               <>
-                <Upload className="h-4 w-4 mr-2" />
-                Upload Document
+                {editMode ? <Save className="h-4 w-4 mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
+                {editMode ? "Save Changes" : "Upload Document"}
               </>
             )}
           </Button>
