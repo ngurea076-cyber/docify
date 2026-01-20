@@ -17,6 +17,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import BookViewer from "@/components/document/BookViewer";
+import CommentsSection from "@/components/document/CommentsSection";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
@@ -265,20 +266,10 @@ const DocumentView = () => {
               </div>
             )}
 
-            {document.allow_comments && (
-              <div className="bg-card rounded-2xl border border-border p-4 flex items-center gap-4 max-w-md">
-                <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
-                  <MessageSquare className="h-5 w-5" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-sm">Comments</h3>
-                  <p className="text-xs text-muted-foreground">Join the conversation</p>
-                </div>
-                <Button variant="outline" size="sm" className="shrink-0">
-                  View
-                </Button>
-              </div>
-            )}
+            <CommentsSection 
+              documentId={id || ""} 
+              allowComments={document.allow_comments} 
+            />
           </div>
         )}
       </div>
