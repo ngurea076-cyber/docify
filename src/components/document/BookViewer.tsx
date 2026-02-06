@@ -110,7 +110,7 @@ const BookViewer: React.FC<BookViewerProps> = ({
   const [zoom, setZoom] = useState(100);
   const [pdfLoaded, setPdfLoaded] = useState(false);
   const [pdfError, setPdfError] = useState(false);
-  const [isSinglePage, setIsSinglePage] = useState(false);
+  const [isSinglePage, setIsSinglePage] = useState(true);
   const [goToPageInput, setGoToPageInput] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
 
