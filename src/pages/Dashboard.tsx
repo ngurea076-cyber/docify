@@ -21,7 +21,6 @@ import {
   LogOut,
   Bell,
   ChevronDown,
-  DollarSign,
   User,
   CreditCard,
   Loader2,
@@ -29,6 +28,7 @@ import {
   Trash2,
   Camera,
 } from "lucide-react";
+import DocumentThumbnail from "@/components/document/DocumentThumbnail";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -70,6 +70,7 @@ interface Document {
   google_maps_url: string | null;
   file_name: string | null;
   file_size: number | null;
+  file_url: string;
 }
 
 interface Profile {
@@ -128,7 +129,7 @@ const Dashboard = () => {
   const fetchDocuments = async () => {
     const { data } = await supabase
       .from("documents")
-      .select("id, title, description, view_count, download_count, is_public, created_at, allow_downloads, allow_donations, allow_comments, document_type, country, city, area, google_maps_url, file_name, file_size")
+      .select("id, title, description, view_count, download_count, is_public, created_at, allow_downloads, allow_donations, allow_comments, document_type, country, city, area, google_maps_url, file_name, file_size, file_url")
       .eq("user_id", user?.id)
       .order("created_at", { ascending: false });
     
@@ -298,6 +299,7 @@ const Dashboard = () => {
       google_maps_url: doc.google_maps_url,
       file_name: doc.file_name,
       file_size: doc.file_size,
+      file_url: doc.file_url,
     });
     setEditModalOpen(true);
   };
@@ -337,7 +339,7 @@ const Dashboard = () => {
     { label: "Total Views", value: "12,847", change: "+23%", icon: Eye },
     { label: "Downloads", value: "3,291", change: "+12%", icon: Download },
     { label: "QR Scans", value: "856", change: "+45%", icon: QrCode },
-    { label: "Donations", value: "$234", change: "+8%", icon: DollarSign },
+    { label: "Donations", value: "KES 234", change: "+8%", icon: CreditCard },
   ];
 
   if (loading) {
@@ -388,7 +390,7 @@ const Dashboard = () => {
               onClick={() => setActiveSection("documents")}
             />
             <NavButton 
-              icon={DollarSign} 
+              icon={CreditCard}
               label="Donations" 
               active={activeSection === "donations"} 
               onClick={() => setActiveSection("donations")}
@@ -527,15 +529,17 @@ const Dashboard = () => {
 
                 {/* Documents List */}
                 <div className="divide-y divide-border">
-                  {documents.map((doc) => (
+                {documents.map((doc) => (
                     <Link
                       to={`/d/${doc.id}`}
                       key={doc.id}
                       className="flex items-center gap-4 p-5 hover:bg-muted/30 transition-colors"
                     >
-                      <div className="w-12 h-16 bg-muted rounded-lg flex items-center justify-center shrink-0">
-                        <FileText className="h-6 w-6 text-muted-foreground" />
-                      </div>
+                      <DocumentThumbnail 
+                        fileUrl={doc.file_url} 
+                        title={doc.title}
+                        className="w-12 h-16 shrink-0"
+                      />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-medium truncate">{doc.title}</h3>
@@ -655,9 +659,11 @@ const Dashboard = () => {
                     key={doc.id}
                     className="flex items-center gap-4 p-5 hover:bg-muted/30 transition-colors"
                   >
-                    <div className="w-12 h-16 bg-muted rounded-lg flex items-center justify-center shrink-0">
-                      <FileText className="h-6 w-6 text-muted-foreground" />
-                    </div>
+                    <DocumentThumbnail 
+                      fileUrl={doc.file_url} 
+                      title={doc.title}
+                      className="w-12 h-16 shrink-0"
+                    />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-medium truncate">{doc.title}</h3>
@@ -749,7 +755,7 @@ const Dashboard = () => {
           {activeSection === "donations" && (
             <div className="bg-card rounded-xl border border-border shadow-sm p-8 text-center">
               <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <DollarSign className="h-8 w-8 text-muted-foreground" />
+                <CreditCard className="h-8 w-8 text-muted-foreground" />
               </div>
               <h3 className="text-lg font-semibold mb-2">Donations</h3>
               <p className="text-muted-foreground mb-4">
