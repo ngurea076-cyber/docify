@@ -65,6 +65,7 @@ interface Document {
   country: string | null;
   city: string | null;
   area: string | null;
+  google_maps_url: string | null;
   file_name: string | null;
   file_size: number | null;
 }
@@ -123,7 +124,7 @@ const Dashboard = () => {
   const fetchDocuments = async () => {
     const { data } = await supabase
       .from("documents")
-      .select("id, title, description, view_count, download_count, is_public, created_at, allow_downloads, allow_donations, allow_comments, document_type, country, city, area, file_name, file_size")
+      .select("id, title, description, view_count, download_count, is_public, created_at, allow_downloads, allow_donations, allow_comments, document_type, country, city, area, google_maps_url, file_name, file_size")
       .eq("user_id", user?.id)
       .order("created_at", { ascending: false });
     
@@ -220,6 +221,7 @@ const Dashboard = () => {
       country: doc.country,
       city: doc.city,
       area: doc.area,
+      google_maps_url: doc.google_maps_url,
       file_name: doc.file_name,
       file_size: doc.file_size,
     });

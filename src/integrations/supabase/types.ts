@@ -71,6 +71,7 @@ export type Database = {
           file_name: string | null
           file_size: number | null
           file_url: string
+          google_maps_url: string | null
           id: string
           is_public: boolean
           title: string
@@ -92,6 +93,7 @@ export type Database = {
           file_name?: string | null
           file_size?: number | null
           file_url: string
+          google_maps_url?: string | null
           id?: string
           is_public?: boolean
           title: string
@@ -113,6 +115,7 @@ export type Database = {
           file_name?: string | null
           file_size?: number | null
           file_url?: string
+          google_maps_url?: string | null
           id?: string
           is_public?: boolean
           title?: string

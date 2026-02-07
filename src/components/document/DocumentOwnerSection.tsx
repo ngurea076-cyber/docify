@@ -11,6 +11,7 @@ interface DocumentOwnerSectionProps {
   country?: string | null;
   city?: string | null;
   area?: string | null;
+  googleMapsUrl?: string | null;
   rating?: number;
   reviewCount?: number;
 }
@@ -21,6 +22,7 @@ const DocumentOwnerSection = ({
   country,
   city,
   area,
+  googleMapsUrl,
   rating = 0,
   reviewCount = 0,
 }: DocumentOwnerSectionProps) => {
@@ -33,10 +35,14 @@ const DocumentOwnerSection = ({
   };
 
   const handleGetDirections = () => {
-    const locationQuery = getLocationString();
-    if (locationQuery) {
-      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationQuery)}`;
-      window.open(mapsUrl, "_blank");
+    if (googleMapsUrl) {
+      window.open(googleMapsUrl, "_blank");
+    } else {
+      const locationQuery = getLocationString();
+      if (locationQuery) {
+        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationQuery)}`;
+        window.open(mapsUrl, "_blank");
+      }
     }
   };
 
