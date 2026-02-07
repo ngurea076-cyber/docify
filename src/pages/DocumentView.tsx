@@ -23,6 +23,7 @@ interface DocumentWithProfile extends Document {
   profiles?: {
     username: string | null;
     avatar_url: string | null;
+    bio: string | null;
   } | null;
 }
 
@@ -53,7 +54,8 @@ const DocumentView = () => {
             *,
             profiles:user_id (
               username,
-              avatar_url
+              avatar_url,
+              bio
             )
           `)
           .eq("id", id)
@@ -245,6 +247,7 @@ const DocumentView = () => {
         {/* Owner Section */}
         <div className="mt-6 space-y-4">
           <DocumentOwnerSection
+            documentId={id || ""}
             owner={document.profiles}
             documentType={document.document_type}
             description={document.description}
@@ -252,8 +255,6 @@ const DocumentView = () => {
             city={document.city}
             area={document.area}
             googleMapsUrl={document.google_maps_url}
-            rating={4.2}
-            reviewCount={42}
           />
 
           {/* Donation CTA */}

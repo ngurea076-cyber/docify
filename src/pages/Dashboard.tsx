@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -106,6 +107,7 @@ const Dashboard = () => {
   const [tillNumber, setTillNumber] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [bio, setBio] = useState("");
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -151,6 +153,7 @@ const Dashboard = () => {
         setPaybill(data.mpesa_paybill || "");
         setTillNumber(data.mpesa_till || "");
         setAvatarUrl(data.avatar_url || null);
+        setBio(data.bio || "");
       }
     } catch (error) {
       console.error("Failed to load profile", error);
@@ -172,6 +175,7 @@ const Dashboard = () => {
           mpesa_paybill: paybill.trim() || null,
           mpesa_till: tillNumber.trim() || null,
           avatar_url: avatarUrl,
+          bio: bio.trim() || null,
         });
 
       if (error) throw error;
@@ -845,6 +849,21 @@ const Dashboard = () => {
                         />
                         <p className="text-xs text-muted-foreground">
                           This will be displayed on your public documents
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="bio">Bio / Description</Label>
+                        <Textarea
+                          id="bio"
+                          placeholder="Tell viewers a bit about yourself or your business..."
+                          value={bio}
+                          onChange={(e) => setBio(e.target.value)}
+                          rows={3}
+                          maxLength={300}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {bio.length}/300 characters - shown below your documents
                         </p>
                       </div>
 
