@@ -77,6 +77,7 @@ export type Database = {
           google_maps_url: string | null
           id: string
           is_public: boolean
+          order_url: string | null
           title: string
           updated_at: string
           user_id: string
@@ -99,6 +100,7 @@ export type Database = {
           google_maps_url?: string | null
           id?: string
           is_public?: boolean
+          order_url?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -121,6 +123,7 @@ export type Database = {
           google_maps_url?: string | null
           id?: string
           is_public?: boolean
+          order_url?: string | null
           title?: string
           updated_at?: string
           user_id?: string

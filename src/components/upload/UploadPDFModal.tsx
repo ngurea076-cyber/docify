@@ -27,6 +27,7 @@ export interface DocumentData {
   file_name: string | null;
   file_size: number | null;
   file_url: string | null;
+  order_url: string | null;
 }
 
 interface UploadPDFModalProps {
@@ -73,6 +74,7 @@ const UploadPDFModal = ({
   const [city, setCity] = useState("");
   const [area, setArea] = useState("");
   const [googleMapsUrl, setGoogleMapsUrl] = useState("");
+  const [orderUrl, setOrderUrl] = useState("");
   
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -90,6 +92,7 @@ const UploadPDFModal = ({
     setCity("");
     setArea("");
     setGoogleMapsUrl("");
+    setOrderUrl("");
   };
 
   // Populate form when in edit mode
@@ -106,6 +109,7 @@ const UploadPDFModal = ({
       setCity(documentData.city || "");
       setArea(documentData.area || "");
       setGoogleMapsUrl(documentData.google_maps_url || "");
+      setOrderUrl(documentData.order_url || "");
     } else if (!open) {
       resetForm();
     }
@@ -196,6 +200,7 @@ const UploadPDFModal = ({
           city: isPublic ? city.trim() || null : null,
           area: isPublic ? area.trim() || null : null,
           google_maps_url: googleMapsUrl.trim() || null,
+          order_url: documentType === "menu" ? orderUrl.trim() || null : null,
         };
 
         // If a new file is uploaded, handle file replacement
@@ -275,6 +280,7 @@ const UploadPDFModal = ({
             city: isPublic ? city.trim() || null : null,
             area: isPublic ? area.trim() || null : null,
             google_maps_url: googleMapsUrl.trim() || null,
+            order_url: documentType === "menu" ? orderUrl.trim() || null : null,
           });
 
         if (dbError) throw dbError;
@@ -583,6 +589,19 @@ const UploadPDFModal = ({
                     />
                     <p className="text-xs text-muted-foreground">
                       Open Google Maps, find your location, and copy the share link
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="orderUrl">Order Link (WhatsApp/Website)</Label>
+                    <Input
+                      id="orderUrl"
+                      placeholder="e.g., https://wa.me/254700000000 or https://order.example.com"
+                      value={orderUrl}
+                      onChange={(e) => setOrderUrl(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Add a WhatsApp link or website URL where customers can place orders
                     </p>
                   </div>
                 </>

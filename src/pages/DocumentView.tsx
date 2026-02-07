@@ -9,6 +9,8 @@ import {
   Heart,
   AlertCircle,
   DollarSign,
+  ShoppingCart,
+  ExternalLink,
 } from "lucide-react";
 import BookViewer from "@/components/document/BookViewer";
 import CommentsSection from "@/components/document/CommentsSection";
@@ -257,8 +259,31 @@ const DocumentView = () => {
             googleMapsUrl={document.google_maps_url}
           />
 
-          {/* Donation CTA */}
-          {document.allow_donations && (
+          {/* Order CTA for menus with order_url */}
+          {document.document_type === "menu" && document.order_url && (
+            <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl border border-primary/20 p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
+                  <ShoppingCart className="h-6 w-6 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold">Ready to order?</h3>
+                  <p className="text-sm text-muted-foreground">Place your order via WhatsApp or website</p>
+                </div>
+                <Button 
+                  variant="hero" 
+                  className="gap-2 shrink-0"
+                  onClick={() => window.open(document.order_url!, "_blank")}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Order Now
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Donation CTA - show for non-menu documents or menus without order_url */}
+          {document.allow_donations && !(document.document_type === "menu" && document.order_url) && (
             <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-2xl border border-accent/20 p-6">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center shrink-0">
