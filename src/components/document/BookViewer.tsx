@@ -77,8 +77,7 @@ const PDFBookPage = forwardRef<HTMLDivElement, PageProps>(
         ) : (
           <PDFPage
             pageNumber={pageNumber}
-            width={width - 10}
-            height={height - 10}
+            width={width}
             onLoadSuccess={() => setIsLoading(false)}
             onLoadError={() => {
               setIsLoading(false);
@@ -253,11 +252,11 @@ const BookViewer: React.FC<BookViewerProps> = ({
     ref: flipBookRef,
     width: dimensions.width,
     height: dimensions.height,
-    size: "stretch" as const,
+    size: "fixed" as const,
     minWidth: 200,
-    maxWidth: isSinglePage ? 1200 : 800,
+    maxWidth: 2000,
     minHeight: 280,
-    maxHeight: 1400,
+    maxHeight: 2800,
     showCover: true,
     mobileScrollSupport: true,
     onFlip: handleFlip,
