@@ -180,8 +180,8 @@ const DocumentOwnerSection = ({
             </p>
           )}
 
-          {/* Location */}
-          {hasLocation && (
+          {/* Location - only show if Google Maps URL is provided */}
+          {googleMapsUrl && hasLocation && (
             <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-2">
               <MapPin className="h-4 w-4 shrink-0" />
               <span className="truncate">{getLocationString()}</span>
