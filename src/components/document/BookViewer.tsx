@@ -137,44 +137,35 @@ const BookViewer: React.FC<BookViewerProps> = ({
       console.error("Fullscreen error:", err);
     }
   };
-  // Calculate dimensions based on container size - fit content without cropping, compression, or stretching
+  // Calculate dimensions based on container size - prioritize 90% width, allow overflow for height
   useEffect(() => {
     const updateDimensions = () => {
       if (containerRef.current) {
         const containerWidth = containerRef.current.offsetWidth;
-        const containerHeight = containerRef.current.offsetHeight;
         
         // A4 aspect ratio (height / width for portrait)
         const aspectRatio = 1.414;
         
-        // Use 90% of container width for single page mode
+        // Use 90% of container width - this is the primary constraint
         const targetWidthPercent = 0.9;
         const padding = 20;
         
-        let maxPageWidth: number;
-        let maxPageHeight = containerHeight - padding;
+        let pageWidth: number;
         
         if (isSinglePage) {
           // Single page mode - use 90% of container width
-          maxPageWidth = (containerWidth * targetWidthPercent) - padding;
+          pageWidth = (containerWidth * targetWidthPercent) - padding;
         } else {
           // Double page mode - two pages side by side, each using ~45% width
-          maxPageWidth = ((containerWidth * targetWidthPercent) - padding) / 2;
+          pageWidth = ((containerWidth * targetWidthPercent) - padding) / 2;
         }
         
-        // Calculate dimensions that fit within container while maintaining A4 aspect ratio
-        let width = maxPageWidth;
-        let height = width * aspectRatio;
-        
-        // If height exceeds available space, constrain by height instead (no cropping)
-        if (height > maxPageHeight) {
-          height = maxPageHeight;
-          width = height / aspectRatio;
-        }
+        // Calculate height based on A4 aspect ratio - no height constraint to avoid cropping
+        const pageHeight = pageWidth * aspectRatio;
 
         // Apply zoom factor
-        const scaledWidth = (width * zoom) / 100;
-        const scaledHeight = (height * zoom) / 100;
+        const scaledWidth = (pageWidth * zoom) / 100;
+        const scaledHeight = (pageHeight * zoom) / 100;
 
         setDimensions({ 
           width: Math.floor(Math.max(scaledWidth, 200)), 
