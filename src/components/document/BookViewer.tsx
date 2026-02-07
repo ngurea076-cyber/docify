@@ -124,6 +124,35 @@ const BookViewer: React.FC<BookViewerProps> = ({
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
 
+  // Prevent right-click and common screenshot shortcuts inside the viewer
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Block Print Screen and common screenshot shortcuts
+      if (
+        e.key === "PrintScreen" ||
+        (e.ctrlKey && e.shiftKey && (e.key === "s" || e.key === "S")) ||
+        (e.metaKey && e.shiftKey && (e.key === "s" || e.key === "S" || e.key === "3" || e.key === "4" || e.key === "5"))
+      ) {
+        e.preventDefault();
+      }
+    };
+
+    viewer.addEventListener("contextmenu", handleContextMenu);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      viewer.removeEventListener("contextmenu", handleContextMenu);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
   const toggleFullscreen = async () => {
     if (!viewerRef.current) return;
 
@@ -318,9 +347,10 @@ const BookViewer: React.FC<BookViewerProps> = ({
   return (
     <div 
       ref={viewerRef}
-      className={`bg-card rounded-2xl border border-border shadow-lg overflow-hidden flex flex-col ${
+      className={`bg-card rounded-2xl border border-border shadow-lg overflow-hidden flex flex-col select-none ${
         isFullscreen ? "fixed inset-0 z-50 rounded-none" : ""
       }`}
+      style={{ WebkitUserSelect: "none", userSelect: "none" }}
     >
       {/* Toolbar */}
       <div className="flex items-center justify-between p-3 border-b border-border bg-muted/30 flex-wrap gap-2">
