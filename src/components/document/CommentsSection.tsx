@@ -1,20 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { MessageSquare, Send, Loader2, Trash2, LogIn, ChevronLeft, ChevronRight } from "lucide-react";
-import { Link } from "react-router-dom";
+import { MessageSquare, Send, Loader2, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import HCaptcha from "@hcaptcha/react-hcaptcha";
 
 interface Comment {
   id: string;
   content: string;
   created_at: string;
-  user_id: string;
+  user_id: string | null;
+  guest_name: string | null;
   profiles: {
     username: string | null;
   } | null;
@@ -27,6 +29,8 @@ interface CommentsSectionProps {
   pageSize?: number;
 }
 
+const HCAPTCHA_SITE_KEY = "10000000-ffff-ffff-ffff-000000000001"; // Test key - replace with real key
+
 const CommentsSection = ({ 
   documentId, 
   allowComments, 
@@ -38,11 +42,14 @@ const CommentsSection = ({
   const [comments, setComments] = useState<Comment[]>([]);
   const [allComments, setAllComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
+  const [guestName, setGuestName] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRef = useRef<HCaptcha>(null);
 
   const totalPages = Math.ceil(allComments.length / pageSize);
 
@@ -89,6 +96,7 @@ const CommentsSection = ({
           content,
           created_at,
           user_id,
+          guest_name,
           profiles:user_id (
             username
           )
@@ -108,52 +116,95 @@ const CommentsSection = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to leave a comment",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!newComment.trim()) return;
 
-    setSubmitting(true);
-    try {
-      // Ensure profile exists
-      const { data: existingProfile } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("id", user.id)
-        .maybeSingle();
+    // For logged-in users, use regular Supabase insert
+    if (user) {
+      setSubmitting(true);
+      try {
+        // Ensure profile exists
+        const { data: existingProfile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("id", user.id)
+          .maybeSingle();
 
-      if (!existingProfile) {
-        await supabase.from("profiles").insert({ id: user.id });
+        if (!existingProfile) {
+          await supabase.from("profiles").insert({ id: user.id });
+        }
+
+        const { error } = await supabase.from("comments").insert({
+          document_id: documentId,
+          user_id: user.id,
+          content: newComment.trim(),
+        });
+
+        if (error) throw error;
+
+        setNewComment("");
+        toast({
+          title: "Comment posted",
+          description: "Your comment has been added",
+        });
+        fetchComments();
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to post comment",
+          variant: "destructive",
+        });
+      } finally {
+        setSubmitting(false);
+      }
+    } else {
+      // For guests, require CAPTCHA verification
+      if (!captchaToken) {
+        toast({
+          title: "Verification required",
+          description: "Please complete the CAPTCHA verification",
+          variant: "destructive",
+        });
+        return;
       }
 
-      const { error } = await supabase.from("comments").insert({
-        document_id: documentId,
-        user_id: user.id,
-        content: newComment.trim(),
-      });
+      setSubmitting(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("verify-captcha-comment", {
+          body: {
+            captchaToken,
+            documentId,
+            content: newComment.trim(),
+            guestName: guestName.trim() || "Guest",
+          },
+        });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      setNewComment("");
-      toast({
-        title: "Comment posted",
-        description: "Your comment has been added",
-      });
-      fetchComments();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to post comment",
-        variant: "destructive",
-      });
-    } finally {
-      setSubmitting(false);
+        if (data?.error) {
+          throw new Error(data.error);
+        }
+
+        setNewComment("");
+        setGuestName("");
+        setCaptchaToken(null);
+        captchaRef.current?.resetCaptcha();
+        
+        toast({
+          title: "Comment posted",
+          description: "Your comment has been added",
+        });
+        fetchComments();
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to post comment",
+          variant: "destructive",
+        });
+        captchaRef.current?.resetCaptcha();
+        setCaptchaToken(null);
+      } finally {
+        setSubmitting(false);
+      }
     }
   };
 
@@ -183,11 +234,21 @@ const CommentsSection = ({
     }
   };
 
-  const getUserInitials = (username: string | null) => {
-    if (username) {
-      return username.slice(0, 2).toUpperCase();
+  const getUserInitials = (comment: Comment) => {
+    if (comment.profiles?.username) {
+      return comment.profiles.username.slice(0, 2).toUpperCase();
     }
-    return "AN";
+    if (comment.guest_name) {
+      return comment.guest_name.slice(0, 2).toUpperCase();
+    }
+    return "GU";
+  };
+
+  const getDisplayName = (comment: Comment) => {
+    if (comment.profiles?.username) {
+      return comment.profiles.username;
+    }
+    return comment.guest_name || "Guest";
   };
 
   if (!allowComments) return null;
@@ -219,48 +280,57 @@ const CommentsSection = ({
     ) : null
   );
 
-  // Comment input form
+  // Comment input form - now supports both logged in users and guests
   const CommentInput = () => (
-    user ? (
-      <form onSubmit={handleSubmit} className="space-y-2">
-        <Textarea
-          placeholder="Write a comment..."
-          value={newComment}
-          onChange={(e) => setNewComment(e.target.value)}
-          className="resize-none"
-          rows={3}
+    <form onSubmit={handleSubmit} className="space-y-3">
+      {!user && (
+        <Input
+          placeholder="Your name (optional)"
+          value={guestName}
+          onChange={(e) => setGuestName(e.target.value)}
+          maxLength={50}
         />
-        <Button 
-          type="submit" 
-          disabled={!newComment.trim() || submitting}
-          className="w-full"
-        >
-          {submitting ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Posting...
-            </>
-          ) : (
-            <>
-              <Send className="h-4 w-4 mr-2" />
-              Post Comment
-            </>
-          )}
-        </Button>
-      </form>
-    ) : (
-      <div className="bg-muted/50 rounded-lg p-4 text-center">
-        <p className="text-sm text-muted-foreground mb-3">
-          Sign in to leave a comment
+      )}
+      <Textarea
+        placeholder="Write a comment..."
+        value={newComment}
+        onChange={(e) => setNewComment(e.target.value)}
+        className="resize-none"
+        rows={3}
+      />
+      {!user && (
+        <div className="flex justify-center">
+          <HCaptcha
+            ref={captchaRef}
+            sitekey={HCAPTCHA_SITE_KEY}
+            onVerify={(token) => setCaptchaToken(token)}
+            onExpire={() => setCaptchaToken(null)}
+          />
+        </div>
+      )}
+      <Button 
+        type="submit" 
+        disabled={!newComment.trim() || submitting || (!user && !captchaToken)}
+        className="w-full"
+      >
+        {submitting ? (
+          <>
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            Posting...
+          </>
+        ) : (
+          <>
+            <Send className="h-4 w-4 mr-2" />
+            Post Comment
+          </>
+        )}
+      </Button>
+      {!user && (
+        <p className="text-xs text-center text-muted-foreground">
+          Complete the verification above to post as a guest
         </p>
-        <Link to="/login">
-          <Button variant="outline" size="sm" className="gap-2">
-            <LogIn className="h-4 w-4" />
-            Sign In
-          </Button>
-        </Link>
-      </div>
-    )
+      )}
+    </form>
   );
 
   // Comments list
@@ -282,14 +352,21 @@ const CommentsSection = ({
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                 <span className="text-xs font-semibold text-primary">
-                  {getUserInitials(comment.profiles?.username)}
+                  {getUserInitials(comment)}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium truncate">
-                    {comment.profiles?.username || "Anonymous"}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium truncate">
+                      {getDisplayName(comment)}
+                    </span>
+                    {!comment.user_id && (
+                      <span className="text-xs bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
+                        Guest
+                      </span>
+                    )}
+                  </div>
                   <span className="text-xs text-muted-foreground shrink-0">
                     {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                   </span>
@@ -298,7 +375,7 @@ const CommentsSection = ({
                   {comment.content}
                 </p>
               </div>
-              {user?.id === comment.user_id && (
+              {user?.id === comment.user_id && comment.user_id && (
                 <Button
                   variant="ghost"
                   size="icon"
