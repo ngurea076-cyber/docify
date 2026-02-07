@@ -23,6 +23,7 @@ export interface DocumentData {
   country: string | null;
   city: string | null;
   area: string | null;
+  google_maps_url: string | null;
   file_name: string | null;
   file_size: number | null;
 }
@@ -70,6 +71,7 @@ const UploadPDFModal = ({
   const [country, setCountry] = useState("");
   const [city, setCity] = useState("");
   const [area, setArea] = useState("");
+  const [googleMapsUrl, setGoogleMapsUrl] = useState("");
   
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -86,6 +88,7 @@ const UploadPDFModal = ({
     setCountry("");
     setCity("");
     setArea("");
+    setGoogleMapsUrl("");
   };
 
   // Populate form when in edit mode
@@ -101,6 +104,7 @@ const UploadPDFModal = ({
       setCountry(documentData.country || "");
       setCity(documentData.city || "");
       setArea(documentData.area || "");
+      setGoogleMapsUrl(documentData.google_maps_url || "");
     } else if (!open) {
       resetForm();
     }
@@ -192,6 +196,7 @@ const UploadPDFModal = ({
             country: isPublic ? country.trim() || null : null,
             city: isPublic ? city.trim() || null : null,
             area: isPublic ? area.trim() || null : null,
+            google_maps_url: googleMapsUrl.trim() || null,
           })
           .eq("id", documentData.id);
 
@@ -246,6 +251,7 @@ const UploadPDFModal = ({
             country: isPublic ? country.trim() || null : null,
             city: isPublic ? city.trim() || null : null,
             area: isPublic ? area.trim() || null : null,
+            google_maps_url: googleMapsUrl.trim() || null,
           });
 
         if (dbError) throw dbError;
@@ -487,6 +493,19 @@ const UploadPDFModal = ({
                       value={area}
                       onChange={(e) => setArea(e.target.value)}
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="googleMapsUrl">Google Maps Link</Label>
+                    <Input
+                      id="googleMapsUrl"
+                      placeholder="Paste Google Maps URL here"
+                      value={googleMapsUrl}
+                      onChange={(e) => setGoogleMapsUrl(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Open Google Maps, find your location, and copy the share link
+                    </p>
                   </div>
                 </>
               )}

@@ -250,6 +250,7 @@ const DocumentView = () => {
             country={document.country}
             city={document.city}
             area={document.area}
+            googleMapsUrl={document.google_maps_url}
             rating={4.2}
             reviewCount={42}
           />
