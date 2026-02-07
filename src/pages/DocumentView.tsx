@@ -247,6 +247,7 @@ const DocumentView = () => {
           <DocumentOwnerSection
             owner={document.profiles}
             documentType={document.document_type}
+            description={document.description}
             country={document.country}
             city={document.city}
             area={document.area}
