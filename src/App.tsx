@@ -12,6 +12,7 @@ import Explore from "./pages/Explore";
 import Dashboard from "./pages/Dashboard";
 import DocumentView from "./pages/DocumentView";
 import Profile from "./pages/Profile";
+import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/explore" element={<Explore />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/about" element={<About />} />
             <Route path="/d/:id" element={<DocumentView />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
