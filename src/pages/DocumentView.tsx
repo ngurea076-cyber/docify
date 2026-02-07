@@ -236,8 +236,8 @@ const DocumentView = () => {
       </header>
 
       <div className="w-[90vw] mx-auto py-4">
-        {/* Book Viewer - Full width focus */}
-        <div style={{ minHeight: "calc(100vh - 180px)" }}>
+        {/* Book Viewer - Full width, auto height */}
+        <div>
           <BookViewer 
             fileUrl={pdfUrl || undefined}
             onPageChange={setCurrentPage}

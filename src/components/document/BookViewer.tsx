@@ -309,7 +309,7 @@ const BookViewer: React.FC<BookViewerProps> = ({
     <div 
       ref={viewerRef}
       className={`bg-card rounded-2xl border border-border shadow-lg overflow-hidden flex flex-col ${
-        isFullscreen ? "fixed inset-0 z-50 rounded-none" : "h-full"
+        isFullscreen ? "fixed inset-0 z-50 rounded-none" : ""
       }`}
     >
       {/* Toolbar */}
@@ -402,11 +402,14 @@ const BookViewer: React.FC<BookViewerProps> = ({
         </div>
       </div>
 
-      {/* Book View Area - Maximized */}
+      {/* Book View Area - Height auto-adjusts based on content */}
       <div 
         ref={containerRef}
-        className="relative bg-gradient-to-b from-muted/50 to-muted flex items-center justify-center flex-1 min-h-0"
-        style={{ minHeight: isFullscreen ? "auto" : "400px" }}
+        className="relative bg-gradient-to-b from-muted/50 to-muted flex items-center justify-center"
+        style={{ 
+          minHeight: isFullscreen ? "auto" : `${dimensions.height + 40}px`,
+          padding: "20px 0"
+        }}
       >
         {/* Book shadow/binding effect - only show in double page mode */}
         {!isSinglePage && (
