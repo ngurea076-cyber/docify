@@ -26,6 +26,7 @@ export interface DocumentData {
   google_maps_url: string | null;
   file_name: string | null;
   file_size: number | null;
+  file_url: string | null;
 }
 
 interface UploadPDFModalProps {
@@ -183,28 +184,50 @@ const UploadPDFModal = ({
     try {
       if (editMode && documentData) {
         // Update existing document
+        let updateData: any = {
+          title: title.trim(),
+          description: description.trim() || null,
+          allow_downloads: allowDownloads,
+          allow_donations: allowDonations,
+          allow_comments: allowComments,
+          is_public: isPublic,
+          document_type: documentType,
+          country: isPublic ? country.trim() || null : null,
+          city: isPublic ? city.trim() || null : null,
+          area: isPublic ? area.trim() || null : null,
+          google_maps_url: googleMapsUrl.trim() || null,
+        };
+
+        // If a new file is uploaded, handle file replacement
+        if (file && user) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from("pdfs")
+            .upload(fileName, file);
+
+          if (uploadError) throw uploadError;
+
+          // Add file info to update data
+          updateData = {
+            ...updateData,
+            file_url: fileName,
+            file_name: file.name,
+            file_size: file.size,
+          };
+        }
+
         const { error: dbError } = await supabase
           .from("documents")
-          .update({
-            title: title.trim(),
-            description: description.trim() || null,
-            allow_downloads: allowDownloads,
-            allow_donations: allowDonations,
-            allow_comments: allowComments,
-            is_public: isPublic,
-            document_type: documentType,
-            country: isPublic ? country.trim() || null : null,
-            city: isPublic ? city.trim() || null : null,
-            area: isPublic ? area.trim() || null : null,
-            google_maps_url: googleMapsUrl.trim() || null,
-          })
+          .update(updateData)
           .eq("id", documentData.id);
 
         if (dbError) throw dbError;
 
         toast({
           title: "Success",
-          description: "Document updated successfully",
+          description: file ? "Document and file updated successfully" : "Document updated successfully",
         });
       } else {
         // Create new document (existing logic)
@@ -341,16 +364,71 @@ const UploadPDFModal = ({
             </div>
           )}
 
-          {/* Show current file info in edit mode */}
-          {editMode && documentData?.file_name && (
-            <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg border">
-              <FileText className="h-8 w-8 text-primary" />
-              <div>
-                <p className="font-medium text-foreground">{documentData.file_name}</p>
-                {documentData.file_size && (
-                  <p className="text-sm text-muted-foreground">
-                    {(documentData.file_size / 1024 / 1024).toFixed(2)} MB
-                  </p>
+          {/* File replacement area in edit mode */}
+          {editMode && (
+            <div className="space-y-3">
+              {/* Current file info */}
+              {documentData?.file_name && !file && (
+                <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg border">
+                  <FileText className="h-8 w-8 text-primary" />
+                  <div className="flex-1">
+                    <p className="font-medium text-foreground">{documentData.file_name}</p>
+                    {documentData.file_size && (
+                      <p className="text-sm text-muted-foreground">
+                        {(documentData.file_size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* Replace file drop zone */}
+              <div
+                className={`relative border-2 border-dashed rounded-lg p-4 transition-colors ${
+                  dragActive
+                    ? "border-primary bg-primary/5"
+                    : file
+                    ? "border-accent bg-accent/10"
+                    : "border-border hover:border-primary/50"
+                }`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+              >
+                {file ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-6 w-6 text-primary" />
+                      <div>
+                        <p className="font-medium text-foreground text-sm">{file.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {(file.size / 1024 / 1024).toFixed(2)} MB (new file)
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setFile(null)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <Upload className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground mb-1">
+                      Drop a new PDF here to replace the current file
+                    </p>
+                    <p className="text-xs text-muted-foreground">or click to browse</p>
+                    <input
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      onChange={handleFileChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                  </div>
                 )}
               </div>
             </div>
