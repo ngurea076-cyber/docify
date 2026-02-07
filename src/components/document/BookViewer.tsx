@@ -58,7 +58,7 @@ const PDFBookPage = forwardRef<HTMLDivElement, PageProps>(
     return (
       <div
         ref={ref}
-        className="book-page bg-white shadow-lg flex items-center justify-center overflow-hidden relative"
+        className="book-page bg-white shadow-lg flex items-center justify-center relative"
         style={{
           width: `${width}px`,
           height: `${height}px`,
@@ -106,6 +106,7 @@ const BookViewer: React.FC<BookViewerProps> = ({
   const [currentPage, setCurrentPage] = useState(0);
   const [numPages, setNumPages] = useState<number>(initialTotalPages);
   const [dimensions, setDimensions] = useState({ width: 300, height: 400 });
+  const [pageAspectRatio, setPageAspectRatio] = useState(1.414);
   const [zoom, setZoom] = useState(100);
   const [pdfLoaded, setPdfLoaded] = useState(false);
   const [pdfError, setPdfError] = useState(false);
@@ -136,39 +137,37 @@ const BookViewer: React.FC<BookViewerProps> = ({
       console.error("Fullscreen error:", err);
     }
   };
-  // Calculate dimensions based on container size - prioritize 90% width, allow overflow for height
+  // Calculate dimensions based on container size - fit full page without cropping
   useEffect(() => {
     const updateDimensions = () => {
       if (containerRef.current) {
         const containerWidth = containerRef.current.offsetWidth;
-        
-        // A4 aspect ratio (height / width for portrait)
-        const aspectRatio = 1.414;
-        
-        // Use 90% of container width - this is the primary constraint
-        const targetWidthPercent = 0.9;
+
+        // Use the PDF's actual page aspect ratio when available
+        const aspectRatio = pageAspectRatio;
+
+        // The parent layout already targets ~90vw; use full container width here
+        const targetWidthPercent = 1;
         const padding = 20;
-        
+
         let pageWidth: number;
-        
+
         if (isSinglePage) {
-          // Single page mode - use 90% of container width
           pageWidth = (containerWidth * targetWidthPercent) - padding;
         } else {
-          // Double page mode - two pages side by side, each using ~45% width
+          // Two pages side-by-side
           pageWidth = ((containerWidth * targetWidthPercent) - padding) / 2;
         }
-        
-        // Calculate height based on A4 aspect ratio - no height constraint to avoid cropping
+
         const pageHeight = pageWidth * aspectRatio;
 
         // Apply zoom factor
         const scaledWidth = (pageWidth * zoom) / 100;
         const scaledHeight = (pageHeight * zoom) / 100;
 
-        setDimensions({ 
-          width: Math.floor(Math.max(scaledWidth, 200)), 
-          height: Math.floor(Math.max(scaledHeight, 280)) 
+        setDimensions({
+          width: Math.floor(Math.max(scaledWidth, 200)),
+          height: Math.floor(Math.max(scaledHeight, 280))
         });
       }
     };
@@ -176,17 +175,29 @@ const BookViewer: React.FC<BookViewerProps> = ({
     updateDimensions();
     window.addEventListener("resize", updateDimensions);
     return () => window.removeEventListener("resize", updateDimensions);
-  }, [zoom, isSinglePage, isFullscreen]);
+  }, [zoom, isSinglePage, isFullscreen, pageAspectRatio]);
 
-  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
-    setNumPages(numPages);
+  const onDocumentLoadSuccess = async (pdf: any) => {
+    setNumPages(pdf.numPages);
     setPdfLoaded(true);
     setPdfError(false);
+
+    // Read the real PDF page size so we can avoid cropping for non-A4 documents
+    try {
+      const firstPage = await pdf.getPage(1);
+      const viewport = firstPage.getViewport({ scale: 1 });
+      if (viewport?.width && viewport?.height) {
+        setPageAspectRatio(viewport.height / viewport.width);
+      }
+    } catch {
+      // Keep default aspect ratio
+    }
   };
 
   const onDocumentLoadError = () => {
     setPdfError(true);
     setPdfLoaded(false);
+    setPageAspectRatio(1.414);
   };
 
   const handleFlip = useCallback((e: any) => {
