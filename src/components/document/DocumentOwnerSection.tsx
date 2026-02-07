@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { MapPin, Navigation, User } from "lucide-react";
+import { MapPin, Navigation } from "lucide-react";
 import StarRating from "./StarRating";
 
 interface DocumentOwnerSectionProps {
@@ -8,6 +8,7 @@ interface DocumentOwnerSectionProps {
     avatar_url: string | null;
   } | null;
   documentType: string;
+  description?: string | null;
   country?: string | null;
   city?: string | null;
   area?: string | null;
@@ -19,6 +20,7 @@ interface DocumentOwnerSectionProps {
 const DocumentOwnerSection = ({
   owner,
   documentType,
+  description,
   country,
   city,
   area,
@@ -37,12 +39,6 @@ const DocumentOwnerSection = ({
   const handleGetDirections = () => {
     if (googleMapsUrl) {
       window.open(googleMapsUrl, "_blank");
-    } else {
-      const locationQuery = getLocationString();
-      if (locationQuery) {
-        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationQuery)}`;
-        window.open(mapsUrl, "_blank");
-      }
     }
   };
 
@@ -79,9 +75,16 @@ const DocumentOwnerSection = ({
             {owner?.username || "Anonymous"}
           </h3>
           
+          {/* Description */}
+          {description && (
+            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+              {description}
+            </p>
+          )}
+
           {/* Location */}
           {hasLocation && (
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-2">
               <MapPin className="h-4 w-4 shrink-0" />
               <span className="truncate">{getLocationString()}</span>
             </div>
@@ -99,8 +102,8 @@ const DocumentOwnerSection = ({
           )}
         </div>
 
-        {/* Get Directions Button */}
-        {hasLocation && (
+        {/* Get Directions Button - only show if googleMapsUrl is provided */}
+        {googleMapsUrl && (
           <Button
             variant="outline"
             size="sm"
