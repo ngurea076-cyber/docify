@@ -445,9 +445,10 @@ const BookViewer: React.FC<BookViewerProps> = ({
       {/* Book View Area - Exact fit to document size */}
       <div 
         ref={containerRef}
-        className="relative bg-gradient-to-b from-muted/50 to-muted flex items-center justify-center"
+        className="relative bg-gradient-to-b from-muted/50 to-muted flex items-center justify-center overflow-auto"
         style={{ 
-          height: isFullscreen ? "calc(100% - 100px)" : `${dimensions.height + 20}px`
+          minHeight: isFullscreen ? "calc(100% - 100px)" : undefined,
+          padding: "10px 0",
         }}
       >
         {/* Book shadow/binding effect - only show in double page mode */}
