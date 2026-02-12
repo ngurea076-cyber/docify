@@ -347,7 +347,7 @@ const BookViewer: React.FC<BookViewerProps> = ({
   return (
     <div 
       ref={viewerRef}
-      className={`bg-card rounded-2xl border border-border shadow-lg overflow-hidden flex flex-col select-none ${
+      className={`bg-card rounded-2xl border border-border shadow-lg flex flex-col select-none ${
         isFullscreen ? "fixed inset-0 z-50 rounded-none" : ""
       }`}
       style={{ WebkitUserSelect: "none", userSelect: "none" }}
@@ -445,9 +445,10 @@ const BookViewer: React.FC<BookViewerProps> = ({
       {/* Book View Area - Exact fit to document size */}
       <div 
         ref={containerRef}
-        className="relative bg-gradient-to-b from-muted/50 to-muted flex items-center justify-center overflow-auto"
+        className="relative bg-gradient-to-b from-muted/50 to-muted flex items-center justify-center"
         style={{ 
-          minHeight: isFullscreen ? "calc(100% - 100px)" : undefined,
+          height: isFullscreen ? "calc(100% - 100px)" : `${dimensions.height + 40}px`,
+          overflow: isFullscreen ? "auto" : "visible",
           padding: "10px 0",
         }}
       >
