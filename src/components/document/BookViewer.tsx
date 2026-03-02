@@ -307,7 +307,7 @@ const BookViewer: React.FC<BookViewerProps> = ({
     flippingTime: 600,
     usePortrait: isSinglePage,
     startZIndex: 0,
-    autoSize: false,
+    autoSize: true,
     maxShadowOpacity: 0.5,
     showPageCorners: true,
     disableFlipByClick: false,
@@ -442,13 +442,14 @@ const BookViewer: React.FC<BookViewerProps> = ({
         </div>
       </div>
 
-      {/* Book View Area - Exact fit to document size */}
+      {/* Book View Area - Auto-fit without clipping or overlap */}
       <div 
         ref={containerRef}
         className="relative bg-gradient-to-b from-muted/50 to-muted flex items-center justify-center"
         style={{ 
-          height: isFullscreen ? "calc(100% - 100px)" : `${dimensions.height}px`,
-          overflow: isFullscreen ? "auto" : "visible",
+          height: isFullscreen ? "calc(100% - 100px)" : "auto",
+          minHeight: `${dimensions.height}px`,
+          overflow: "auto",
         }}
       >
         {/* Book shadow/binding effect - only show in double page mode */}
