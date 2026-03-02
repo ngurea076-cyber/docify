@@ -413,10 +413,9 @@ const BookViewer: React.FC<BookViewerProps> = ({
       {/* Book View Area - Auto height, no blank space */}
       <div 
         ref={containerRef}
-        className="relative bg-gradient-to-b from-muted/50 to-muted flex items-center justify-center"
+        className="relative bg-gradient-to-b from-muted/50 to-muted flex items-center justify-center overflow-hidden"
         style={{ 
           height: isFullscreen ? "calc(100% - 100px)" : undefined,
-          overflow: isFullscreen ? "auto" : "visible",
         }}
       >
         
