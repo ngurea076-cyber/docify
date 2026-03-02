@@ -3,10 +3,10 @@ import HTMLFlipBook from "react-pageflip";
 import { Document, Page as PDFPage, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, FileText, Loader2, BookOpen, File, Maximize, Minimize } from "lucide-react";
+import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, FileText, Loader2, Maximize, Minimize } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Toggle } from "@/components/ui/toggle";
+
 
 // Set up PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -110,7 +110,7 @@ const BookViewer: React.FC<BookViewerProps> = ({
   const [zoom, setZoom] = useState(100);
   const [pdfLoaded, setPdfLoaded] = useState(false);
   const [pdfError, setPdfError] = useState(false);
-  const [isSinglePage, setIsSinglePage] = useState(true);
+  const isSinglePage = true;
   const [goToPageInput, setGoToPageInput] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -179,14 +179,7 @@ const BookViewer: React.FC<BookViewerProps> = ({
         const targetWidthPercent = 1;
         const padding = 20;
 
-        let pageWidth: number;
-
-        if (isSinglePage) {
-          pageWidth = (containerWidth * targetWidthPercent) - padding;
-        } else {
-          // Two pages side-by-side
-          pageWidth = ((containerWidth * targetWidthPercent) - padding) / 2;
-        }
+        const pageWidth = (containerWidth * targetWidthPercent) - padding;
 
         const pageHeight = pageWidth * aspectRatio;
 
@@ -204,7 +197,7 @@ const BookViewer: React.FC<BookViewerProps> = ({
     updateDimensions();
     window.addEventListener("resize", updateDimensions);
     return () => window.removeEventListener("resize", updateDimensions);
-  }, [zoom, isSinglePage, isFullscreen, pageAspectRatio]);
+  }, [zoom, isFullscreen, pageAspectRatio]);
 
   const onDocumentLoadSuccess = async (pdf: any) => {
     setNumPages(pdf.numPages);
@@ -281,10 +274,7 @@ const BookViewer: React.FC<BookViewerProps> = ({
 
   // Get current page display text
   const getPageDisplayText = () => {
-    if (isSinglePage) {
-      return `Page ${currentPage + 1} of ${numPages}`;
-    }
-    return `Page ${currentPage + 1} - ${Math.min(currentPage + 2, numPages)} of ${numPages}`;
+    return `Page ${currentPage + 1} of ${numPages}`;
   };
 
   // Common flipbook props - allow larger sizes for 90vw layout
@@ -372,7 +362,7 @@ const BookViewer: React.FC<BookViewerProps> = ({
             variant="ghost"
             size="icon"
             onClick={goToNextPage}
-            disabled={isSinglePage ? currentPage >= numPages - 1 : currentPage >= numPages - 2}
+            disabled={currentPage >= numPages - 1}
             className="h-8 w-8"
           >
             <ChevronRight className="h-4 w-4" />
@@ -396,29 +386,7 @@ const BookViewer: React.FC<BookViewerProps> = ({
           </Button>
         </div>
 
-        {/* View mode toggle */}
-        <div className="flex items-center gap-1 border rounded-lg p-0.5 bg-muted/50">
-          <Toggle
-            pressed={isSinglePage}
-            onPressedChange={() => setIsSinglePage(true)}
-            size="sm"
-            className="h-7 px-2 data-[state=on]:bg-background"
-            aria-label="Single page view"
-          >
-            <File className="h-4 w-4 mr-1" />
-            <span className="text-xs">Single</span>
-          </Toggle>
-          <Toggle
-            pressed={!isSinglePage}
-            onPressedChange={() => setIsSinglePage(false)}
-            size="sm"
-            className="h-7 px-2 data-[state=on]:bg-background"
-            aria-label="Double page view"
-          >
-            <BookOpen className="h-4 w-4 mr-1" />
-            <span className="text-xs">Double</span>
-          </Toggle>
-        </div>
+
 
         {/* Zoom & Fullscreen controls */}
         <div className="flex items-center gap-1">
@@ -442,20 +410,15 @@ const BookViewer: React.FC<BookViewerProps> = ({
         </div>
       </div>
 
-      {/* Book View Area - Auto-fit without clipping or overlap */}
+      {/* Book View Area - Auto height, no blank space */}
       <div 
         ref={containerRef}
         className="relative bg-gradient-to-b from-muted/50 to-muted flex items-center justify-center"
         style={{ 
-          height: isFullscreen ? "calc(100% - 100px)" : "auto",
-          minHeight: `${dimensions.height}px`,
-          overflow: "auto",
+          height: isFullscreen ? "calc(100% - 100px)" : undefined,
+          overflow: isFullscreen ? "auto" : "visible",
         }}
       >
-        {/* Book shadow/binding effect - only show in double page mode */}
-        {!isSinglePage && (
-          <div className="absolute inset-y-0 left-1/2 w-4 -translate-x-1/2 bg-gradient-to-r from-black/10 via-black/20 to-black/10 z-10 pointer-events-none" />
-        )}
         
         {/* PDF Document wrapper - provides context for PDF pages */}
         {fileUrl ? (
@@ -496,13 +459,9 @@ const BookViewer: React.FC<BookViewerProps> = ({
             key={pageNum}
             onClick={() => goToPage(pageNum)}
             className={`w-2 h-2 rounded-full transition-colors hover:scale-125 ${
-              isSinglePage
-                ? pageNum === currentPage + 1
-                  ? "bg-primary"
-                  : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
-                : pageNum >= currentPage + 1 && pageNum <= currentPage + 2
-                  ? "bg-primary"
-                  : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
+              pageNum === currentPage + 1
+                ? "bg-primary"
+                : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
             }`}
             aria-label={`Go to page ${pageNum}`}
           />
