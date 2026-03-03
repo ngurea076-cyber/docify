@@ -19,10 +19,20 @@ const DocumentThumbnail = ({ fileUrl, title, className = "" }: DocumentThumbnail
   useEffect(() => {
     const fetchPdfUrl = async () => {
       try {
-        const { data } = supabase.storage.from("pdfs").getPublicUrl(fileUrl);
-        if (data?.publicUrl) {
-          setPdfUrl(data.publicUrl);
+        // Extract file path (remove bucket prefix if present)
+        const filePath = fileUrl.replace(/^pdfs\//, "");
+
+        // Use signed URL since the bucket is private
+        const { data, error } = await supabase.storage
+          .from("pdfs")
+          .createSignedUrl(filePath, 3600);
+
+        if (error || !data?.signedUrl) {
+          console.error("Failed to get signed URL for thumbnail:", error);
+          setHasError(true);
+          return;
         }
+        setPdfUrl(data.signedUrl);
       } catch (error) {
         console.error("Failed to get PDF URL:", error);
         setHasError(true);
@@ -52,11 +62,11 @@ const DocumentThumbnail = ({ fileUrl, title, className = "" }: DocumentThumbnail
           </div>
         }
         onLoadError={() => setHasError(true)}
-        className="flex items-center justify-center"
+        className="flex items-center justify-center [&_canvas]:!w-full [&_canvas]:!h-auto"
       >
         <Page
           pageNumber={1}
-          width={48}
+          width={80}
           renderTextLayer={false}
           renderAnnotationLayer={false}
         />
