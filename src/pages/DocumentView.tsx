@@ -49,6 +49,10 @@ const DocumentView = () => {
       }
 
       try {
+        // Try lookup by slug first, then by UUID
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+        const column = isUuid ? "id" : "slug";
+
         // Fetch document with author profile
         const { data: docData, error: docError } = await supabase
           .from("documents")
@@ -60,7 +64,7 @@ const DocumentView = () => {
               bio
             )
           `)
-          .eq("id", id)
+          .eq(column, id)
           .maybeSingle();
 
         if (docError) throw docError;
@@ -77,7 +81,7 @@ const DocumentView = () => {
         await supabase
           .from("documents")
           .update({ view_count: (docData.view_count || 0) + 1 })
-          .eq("id", id);
+          .eq("id", docData.id);
 
         // Get signed URL for the PDF file
         if (docData.file_url) {
@@ -113,7 +117,8 @@ const DocumentView = () => {
   }, [id]);
 
   const handleCopy = () => {
-    const shortUrl = `${window.location.origin}/d/${id}`;
+    const slug = (document as any)?.slug || id;
+    const shortUrl = `${window.location.origin}/d/${slug}`;
     navigator.clipboard.writeText(shortUrl);
     setCopied(true);
     toast({
@@ -131,7 +136,7 @@ const DocumentView = () => {
       await supabase
         .from("documents")
         .update({ download_count: (document.download_count || 0) + 1 })
-        .eq("id", id);
+        .eq("id", document.id);
 
       // Open PDF in new tab for download
       window.open(pdfUrl, "_blank");
@@ -249,7 +254,7 @@ const DocumentView = () => {
         {/* Owner Section */}
         <div className="mt-6 space-y-4">
           <DocumentOwnerSection
-            documentId={id || ""}
+            documentId={document.id}
             owner={document.profiles}
             documentType={document.document_type}
             description={document.description}
@@ -304,7 +309,7 @@ const DocumentView = () => {
           {/* Comments Section - Embedded with pagination */}
           {document.allow_comments && (
             <CommentsSection 
-              documentId={id || ""} 
+              documentId={document.id} 
               allowComments={document.allow_comments}
               embedded={true}
               pageSize={5}

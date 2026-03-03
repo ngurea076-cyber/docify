@@ -72,6 +72,7 @@ interface Document {
   file_size: number | null;
   file_url: string;
   order_url: string | null;
+  slug?: string | null;
 }
 
 interface Profile {
@@ -270,8 +271,8 @@ const Dashboard = () => {
     navigate("/");
   };
 
-  const handleCopyLink = (docId: string) => {
-    const url = `${window.location.origin}/d/${docId}`;
+  const handleCopyLink = (docSlug: string) => {
+    const url = `${window.location.origin}/d/${docSlug}`;
     navigator.clipboard.writeText(url);
     toast({
       title: "Link copied!",
@@ -533,14 +534,14 @@ const Dashboard = () => {
                 <div className="divide-y divide-border">
                 {documents.map((doc) => (
                     <Link
-                      to={`/d/${doc.id}`}
+                      to={`/d/${doc.slug || doc.id}`}
                       key={doc.id}
                       className="flex items-center gap-4 p-5 hover:bg-muted/30 transition-colors"
                     >
                       <DocumentThumbnail 
                         fileUrl={doc.file_url} 
                         title={doc.title}
-                        className="w-12 h-16 shrink-0"
+                        className="w-12 h-12 shrink-0"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
@@ -571,7 +572,7 @@ const Dashboard = () => {
                           variant="ghost" 
                           size="icon" 
                           className="h-8 w-8"
-                          onClick={() => handleCopyLink(doc.id)}
+                          onClick={() => handleCopyLink(doc.slug || doc.id)}
                         >
                           <Link2 className="h-4 w-4" />
                         </Button>
@@ -657,14 +658,14 @@ const Dashboard = () => {
               <div className="divide-y divide-border">
                 {documents.map((doc) => (
                   <Link
-                    to={`/d/${doc.id}`}
+                    to={`/d/${doc.slug || doc.id}`}
                     key={doc.id}
                     className="flex items-center gap-4 p-5 hover:bg-muted/30 transition-colors"
                   >
                     <DocumentThumbnail 
                       fileUrl={doc.file_url} 
                       title={doc.title}
-                      className="w-12 h-16 shrink-0"
+                      className="w-12 h-12 shrink-0"
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
@@ -695,7 +696,7 @@ const Dashboard = () => {
                         variant="ghost" 
                         size="icon" 
                         className="h-8 w-8"
-                        onClick={() => handleCopyLink(doc.id)}
+                        onClick={() => handleCopyLink(doc.slug || doc.id)}
                       >
                         <Link2 className="h-4 w-4" />
                       </Button>

@@ -78,6 +78,7 @@ export type Database = {
           id: string
           is_public: boolean
           order_url: string | null
+          slug: string | null
           title: string
           updated_at: string
           user_id: string
@@ -101,6 +102,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           order_url?: string | null
+          slug?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -124,6 +126,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           order_url?: string | null
+          slug?: string | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -215,6 +218,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_slug: { Args: { title: string }; Returns: string }
       get_document_rating_stats: {
         Args: { doc_id: string }
         Returns: {
