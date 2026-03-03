@@ -28,7 +28,7 @@ import {
   Trash2,
   Camera,
 } from "lucide-react";
-import DocumentThumbnail from "@/components/document/DocumentThumbnail";
+import DocumentCard from "@/components/document/DocumentCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -508,113 +508,45 @@ const Dashboard = () => {
               </div>
 
               {/* Documents Section */}
-              <div className="bg-card rounded-xl border border-border shadow-sm">
-                <div className="p-5 border-b border-border">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <h2 className="text-lg font-semibold">Your Documents</h2>
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                      <div className="relative flex-1 sm:flex-initial">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Search documents..."
-                          value={search}
-                          onChange={(e) => setSearch(e.target.value)}
-                          className="pl-9 w-full sm:w-64"
-                        />
-                      </div>
-                      <Button variant="hero" size="sm" className="gap-2 shrink-0" onClick={() => setUploadModalOpen(true)}>
-                        <Plus className="h-4 w-4" />
-                        Upload
-                      </Button>
+              <div>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                  <h2 className="text-lg font-semibold">Your Documents</h2>
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <div className="relative flex-1 sm:flex-initial">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search documents..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="pl-9 w-full sm:w-64"
+                      />
                     </div>
+                    <Button variant="hero" size="sm" className="gap-2 shrink-0" onClick={() => setUploadModalOpen(true)}>
+                      <Plus className="h-4 w-4" />
+                      Upload
+                    </Button>
                   </div>
                 </div>
 
-                {/* Documents List */}
-                <div className="divide-y divide-border">
-                {documents.map((doc) => (
-                    <Link
-                      to={`/d/${doc.slug || doc.id}`}
+                {/* Documents Grid */}
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                  {documents.map((doc) => (
+                    <DocumentCard
                       key={doc.id}
-                      className="flex items-center gap-4 p-5 hover:bg-muted/30 transition-colors"
-                    >
-                      <DocumentThumbnail 
-                        fileUrl={doc.file_url} 
-                        title={doc.title}
-                        className="w-12 h-12 shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-medium truncate">{doc.title}</h3>
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                              doc.is_public
-                                ? "bg-green-100 text-green-700"
-                                : "bg-gray-100 text-gray-700"
-                            }`}
-                          >
-                            {doc.is_public ? "public" : "private"}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Eye className="h-3.5 w-3.5" />
-                            {doc.view_count.toLocaleString()}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Download className="h-3.5 w-3.5" />
-                            {doc.download_count}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.preventDefault()}>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8"
-                          onClick={() => handleCopyLink(doc.slug || doc.id)}
-                        >
-                          <Link2 className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8"
-                          onClick={() => handleOpenQR({ id: doc.id, title: doc.title })}
-                        >
-                          <QrCode className="h-4 w-4" />
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEditDocument(doc)}>
-                              <Pencil className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem 
-                              onClick={() => {
-                                setDeletingDocument({ id: doc.id, title: doc.title });
-                                setDeleteDialogOpen(true);
-                              }}
-                              className="text-destructive"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </Link>
+                      doc={doc}
+                      onCopyLink={handleCopyLink}
+                      onOpenQR={handleOpenQR}
+                      onEdit={handleEditDocument}
+                      onDelete={(d) => {
+                        setDeletingDocument(d);
+                        setDeleteDialogOpen(true);
+                      }}
+                    />
                   ))}
                 </div>
 
                 {documents.length === 0 && (
-                  <div className="p-12 text-center">
+                  <div className="bg-card rounded-xl border border-border shadow-sm p-12 text-center">
                     <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
                       <FileText className="h-8 w-8 text-muted-foreground" />
                     </div>
@@ -633,112 +565,44 @@ const Dashboard = () => {
           )}
 
           {activeSection === "documents" && (
-            <div className="bg-card rounded-xl border border-border shadow-sm">
-              <div className="p-5 border-b border-border">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <h2 className="text-lg font-semibold">All Documents</h2>
-                  <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <div className="relative flex-1 sm:flex-initial">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search documents..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="pl-9 w-full sm:w-64"
-                      />
-                    </div>
-                    <Button variant="hero" size="sm" className="gap-2 shrink-0" onClick={() => setUploadModalOpen(true)}>
-                      <Plus className="h-4 w-4" />
-                      Upload
-                    </Button>
+            <div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                <h2 className="text-lg font-semibold">All Documents</h2>
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <div className="relative flex-1 sm:flex-initial">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search documents..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      className="pl-9 w-full sm:w-64"
+                    />
                   </div>
+                  <Button variant="hero" size="sm" className="gap-2 shrink-0" onClick={() => setUploadModalOpen(true)}>
+                    <Plus className="h-4 w-4" />
+                    Upload
+                  </Button>
                 </div>
               </div>
 
-              <div className="divide-y divide-border">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                 {documents.map((doc) => (
-                  <Link
-                    to={`/d/${doc.slug || doc.id}`}
+                  <DocumentCard
                     key={doc.id}
-                    className="flex items-center gap-4 p-5 hover:bg-muted/30 transition-colors"
-                  >
-                    <DocumentThumbnail 
-                      fileUrl={doc.file_url} 
-                      title={doc.title}
-                      className="w-12 h-12 shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-medium truncate">{doc.title}</h3>
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                            doc.is_public
-                              ? "bg-green-100 text-green-700"
-                              : "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          {doc.is_public ? "public" : "private"}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Eye className="h-3.5 w-3.5" />
-                          {doc.view_count.toLocaleString()}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Download className="h-3.5 w-3.5" />
-                          {doc.download_count}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.preventDefault()}>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8"
-                        onClick={() => handleCopyLink(doc.slug || doc.id)}
-                      >
-                        <Link2 className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8"
-                        onClick={() => handleOpenQR({ id: doc.id, title: doc.title })}
-                      >
-                        <QrCode className="h-4 w-4" />
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEditDocument(doc)}>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            onClick={() => {
-                              setDeletingDocument({ id: doc.id, title: doc.title });
-                              setDeleteDialogOpen(true);
-                            }}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </Link>
+                    doc={doc}
+                    onCopyLink={handleCopyLink}
+                    onOpenQR={handleOpenQR}
+                    onEdit={handleEditDocument}
+                    onDelete={(d) => {
+                      setDeletingDocument(d);
+                      setDeleteDialogOpen(true);
+                    }}
+                  />
                 ))}
               </div>
 
               {documents.length === 0 && (
-                <div className="p-12 text-center">
+                <div className="bg-card rounded-xl border border-border shadow-sm p-12 text-center">
                   <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <FileText className="h-8 w-8 text-muted-foreground" />
                   </div>
