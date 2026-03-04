@@ -27,7 +27,7 @@ const Explore = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("documents")
-        .select("id, title, description, file_url, slug, view_count, download_count, country, city, document_type")
+        .select("id, title, description, file_url, slug, view_count, download_count, country, city, document_type, thumbnail_url")
         .eq("is_public", true)
         .order("view_count", { ascending: false });
       if (error) throw error;
