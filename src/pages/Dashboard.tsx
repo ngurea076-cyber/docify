@@ -72,6 +72,7 @@ interface Document {
   file_size: number | null;
   file_url: string;
   order_url: string | null;
+  thumbnail_url: string | null;
   slug?: string | null;
 }
 
@@ -131,7 +132,7 @@ const Dashboard = () => {
   const fetchDocuments = async () => {
     const { data } = await supabase
       .from("documents")
-      .select("id, title, description, view_count, download_count, is_public, created_at, allow_downloads, allow_donations, allow_comments, document_type, country, city, area, google_maps_url, file_name, file_size, file_url, order_url")
+      .select("id, title, description, view_count, download_count, is_public, created_at, allow_downloads, allow_donations, allow_comments, document_type, country, city, area, google_maps_url, file_name, file_size, file_url, order_url, thumbnail_url")
       .eq("user_id", user?.id)
       .order("created_at", { ascending: false });
     
@@ -303,6 +304,7 @@ const Dashboard = () => {
       file_size: doc.file_size,
       file_url: doc.file_url,
       order_url: doc.order_url,
+      thumbnail_url: doc.thumbnail_url,
     });
     setEditModalOpen(true);
   };

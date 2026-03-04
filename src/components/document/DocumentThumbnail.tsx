@@ -9,32 +9,31 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 interface DocumentThumbnailProps {
   fileUrl: string;
   title: string;
+  thumbnailUrl?: string | null;
   className?: string;
 }
 
-const DocumentThumbnail = ({ fileUrl, title, className = "" }: DocumentThumbnailProps) => {
+const DocumentThumbnail = ({ fileUrl, title, thumbnailUrl, className = "" }: DocumentThumbnailProps) => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
+    // If we have a custom thumbnail, skip PDF loading
+    if (thumbnailUrl) return;
+
     const fetchPdfUrl = async () => {
       try {
-        // Extract file path (remove bucket prefix if present)
         const filePath = fileUrl.replace(/^pdfs\//, "");
-
-        // Use signed URL since the bucket is private
         const { data, error } = await supabase.storage
           .from("pdfs")
           .createSignedUrl(filePath, 3600);
 
         if (error || !data?.signedUrl) {
-          console.error("Failed to get signed URL for thumbnail:", error);
           setHasError(true);
           return;
         }
         setPdfUrl(data.signedUrl);
-      } catch (error) {
-        console.error("Failed to get PDF URL:", error);
+      } catch {
         setHasError(true);
       }
     };
@@ -42,7 +41,20 @@ const DocumentThumbnail = ({ fileUrl, title, className = "" }: DocumentThumbnail
     if (fileUrl) {
       fetchPdfUrl();
     }
-  }, [fileUrl]);
+  }, [fileUrl, thumbnailUrl]);
+
+  // Custom thumbnail: show full image without cropping
+  if (thumbnailUrl) {
+    return (
+      <div className={`bg-muted rounded-lg overflow-hidden flex items-center justify-center ${className}`}>
+        <img
+          src={thumbnailUrl}
+          alt={title}
+          className="w-full h-full object-contain"
+        />
+      </div>
+    );
+  }
 
   if (hasError || !pdfUrl) {
     return (

@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileText, Loader2, X, Save } from "lucide-react";
+import { Upload, FileText, Loader2, X, Save, ImagePlus } from "lucide-react";
 
 export interface DocumentData {
   id: string;
@@ -28,6 +28,7 @@ export interface DocumentData {
   file_size: number | null;
   file_url: string | null;
   order_url: string | null;
+  thumbnail_url: string | null;
 }
 
 interface UploadPDFModalProps {
@@ -63,6 +64,8 @@ const UploadPDFModal = ({
   
   // Form state
   const [file, setFile] = useState<File | null>(null);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [allowDownloads, setAllowDownloads] = useState(true);
@@ -81,6 +84,8 @@ const UploadPDFModal = ({
 
   const resetForm = () => {
     setFile(null);
+    setThumbnailFile(null);
+    setThumbnailPreview(null);
     setTitle("");
     setDescription("");
     setAllowDownloads(true);
@@ -110,6 +115,9 @@ const UploadPDFModal = ({
       setArea(documentData.area || "");
       setGoogleMapsUrl(documentData.google_maps_url || "");
       setOrderUrl(documentData.order_url || "");
+      if (documentData.thumbnail_url) {
+        setThumbnailPreview(documentData.thumbnail_url);
+      }
     } else if (!open) {
       resetForm();
     }
@@ -159,6 +167,28 @@ const UploadPDFModal = ({
     }
   };
 
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const selected = e.target.files[0];
+      if (!selected.type.startsWith("image/")) {
+        toast({ title: "Invalid file", description: "Please upload an image file", variant: "destructive" });
+        return;
+      }
+      setThumbnailFile(selected);
+      setThumbnailPreview(URL.createObjectURL(selected));
+    }
+  };
+
+  const uploadThumbnail = async (userId: string): Promise<string | null> => {
+    if (!thumbnailFile) return null;
+    const ext = thumbnailFile.name.split('.').pop();
+    const path = `${userId}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("thumbnails").upload(path, thumbnailFile);
+    if (error) throw error;
+    const { data } = supabase.storage.from("thumbnails").getPublicUrl(path);
+    return data.publicUrl;
+  };
+
   const handleUpload = async () => {
     if (!user) return;
     
@@ -202,6 +232,12 @@ const UploadPDFModal = ({
           google_maps_url: googleMapsUrl.trim() || null,
           order_url: documentType === "menu" ? orderUrl.trim() || null : null,
         };
+
+        // Upload thumbnail if provided
+        const thumbUrl = await uploadThumbnail(user.id);
+        if (thumbUrl) {
+          updateData.thumbnail_url = thumbUrl;
+        }
 
         // If a new file is uploaded, handle file replacement
         if (file && user) {
@@ -281,6 +317,7 @@ const UploadPDFModal = ({
             area: isPublic ? area.trim() || null : null,
             google_maps_url: googleMapsUrl.trim() || null,
             order_url: documentType === "menu" ? orderUrl.trim() || null : null,
+            thumbnail_url: await uploadThumbnail(user.id),
           });
 
         if (dbError) throw dbError;
@@ -461,6 +498,41 @@ const UploadPDFModal = ({
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
             />
+          </div>
+
+          {/* Thumbnail Upload */}
+          <div className="space-y-2">
+            <Label>Thumbnail Image</Label>
+            <p className="text-xs text-muted-foreground">Square image shown as preview card. Appears without cropping.</p>
+            <div className="flex items-start gap-4">
+              {thumbnailPreview ? (
+                <div className="relative w-24 h-24 rounded-lg overflow-hidden border border-border bg-muted shrink-0">
+                  <img
+                    src={thumbnailPreview}
+                    alt="Thumbnail preview"
+                    className="w-full h-full object-contain"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { setThumbnailFile(null); setThumbnailPreview(null); }}
+                    className="absolute top-1 right-1 bg-background/80 backdrop-blur-sm rounded-full p-0.5"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center w-24 h-24 rounded-lg border-2 border-dashed border-border hover:border-primary/50 cursor-pointer transition-colors bg-muted/30 shrink-0">
+                  <ImagePlus className="h-6 w-6 text-muted-foreground mb-1" />
+                  <span className="text-xs text-muted-foreground">Add</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleThumbnailChange}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
           </div>
 
           {/* Toggle Settings */}

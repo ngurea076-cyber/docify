@@ -14,6 +14,7 @@ interface ExploreDocumentCardProps {
     country: string | null;
     city: string | null;
     document_type: string;
+    thumbnail_url: string | null;
   };
 }
 
@@ -29,6 +30,7 @@ const ExploreDocumentCard = ({ document }: ExploreDocumentCardProps) => {
         <DocumentThumbnail
           fileUrl={document.file_url}
           title={document.title}
+          thumbnailUrl={document.thumbnail_url}
           className="w-full h-full transition-transform duration-300 group-hover:scale-105"
         />
       </div>

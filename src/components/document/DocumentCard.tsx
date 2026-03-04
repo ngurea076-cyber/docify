@@ -26,6 +26,7 @@ interface DocumentCardProps {
     is_public: boolean;
     view_count: number;
     download_count: number;
+    thumbnail_url?: string | null;
     slug?: string | null;
   };
   onCopyLink: (slug: string) => void;
@@ -45,6 +46,7 @@ const DocumentCard = ({ doc, onCopyLink, onOpenQR, onEdit, onDelete }: DocumentC
         <DocumentThumbnail
           fileUrl={doc.file_url}
           title={doc.title}
+          thumbnailUrl={doc.thumbnail_url}
           className="w-full h-full transition-transform duration-300 group-hover:scale-105"
         />
         <div className="absolute top-3 right-3">
