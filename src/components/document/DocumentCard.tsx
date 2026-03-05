@@ -42,12 +42,12 @@ const DocumentCard = ({ doc, onCopyLink, onOpenQR, onEdit, onDelete }: DocumentC
       className="group bg-card rounded-2xl border border-border overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-fade-in"
     >
       {/* Thumbnail */}
-      <div className="aspect-square bg-muted relative overflow-hidden">
+      <div className="bg-muted relative overflow-hidden">
         <DocumentThumbnail
           fileUrl={doc.file_url}
           title={doc.title}
           thumbnailUrl={doc.thumbnail_url}
-          className="w-full h-full transition-transform duration-300 group-hover:scale-105"
+          className="w-full transition-transform duration-300 group-hover:scale-105"
         />
         <div className="absolute top-3 right-3">
           <span
