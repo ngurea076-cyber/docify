@@ -77,11 +77,16 @@ const DocumentView = () => {
 
         setDocument(docData);
 
-        // Increment view count
-        await supabase
-          .from("documents")
-          .update({ view_count: (docData.view_count || 0) + 1 })
-          .eq("id", docData.id);
+        // Increment view count and log the view
+        await Promise.all([
+          supabase
+            .from("documents")
+            .update({ view_count: (docData.view_count || 0) + 1 })
+            .eq("id", docData.id),
+          supabase
+            .from("document_views")
+            .insert({ document_id: docData.id }),
+        ]);
 
         // Get signed URL for the PDF file
         if (docData.file_url) {

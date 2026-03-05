@@ -2,7 +2,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import Header from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,15 @@ import {
   Calendar,
   FileText,
 } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 const DocumentStats = () => {
   const { id } = useParams<{ id: string }>();
@@ -83,6 +92,43 @@ const DocumentStats = () => {
     },
     enabled: !!id,
   });
+
+  // Fetch daily view logs for chart
+  const { data: viewLogs = [] } = useQuery({
+    queryKey: ["document-view-logs", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("document_views")
+        .select("viewed_at")
+        .eq("document_id", id!)
+        .order("viewed_at", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id && !!user,
+  });
+
+  // Aggregate views by day for last 30 days
+  const chartData = useMemo(() => {
+    const now = new Date();
+    const days: { date: string; views: number }[] = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().split("T")[0];
+      days.push({ date: key, views: 0 });
+    }
+    const map = new Map(days.map((d) => [d.date, d]));
+    viewLogs.forEach((v) => {
+      const key = new Date(v.viewed_at).toISOString().split("T")[0];
+      const entry = map.get(key);
+      if (entry) entry.views++;
+    });
+    return days.map((d) => ({
+      date: new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      views: d.views,
+    }));
+  }, [viewLogs]);
 
   if (authLoading || docLoading) {
     return (
@@ -195,6 +241,52 @@ const DocumentStats = () => {
               </Card>
             ))}
           </div>
+
+          {/* Views Chart */}
+          <Card className="border-border mb-8">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                Views — Last 30 Days
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 12 }}
+                      className="text-muted-foreground"
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis
+                      allowDecimals={false}
+                      tick={{ fontSize: 12 }}
+                      className="text-muted-foreground"
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                        fontSize: "14px",
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="views"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 5 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Document Details */}
           <div className="grid md:grid-cols-2 gap-6 mb-8">
