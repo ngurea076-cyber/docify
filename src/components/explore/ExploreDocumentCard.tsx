@@ -26,7 +26,7 @@ const ExploreDocumentCard = ({ document }: ExploreDocumentCardProps) => {
       to={`/d/${document.slug || document.id}`}
       className="group bg-card rounded-2xl border border-border overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
     >
-      <div className="aspect-[4/3] bg-muted relative overflow-hidden">
+      <div className="aspect-square bg-muted relative overflow-hidden">
         <DocumentThumbnail
           fileUrl={document.file_url}
           title={document.title}
