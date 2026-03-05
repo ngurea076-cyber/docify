@@ -59,6 +59,32 @@ export type Database = {
           },
         ]
       }
+      document_views: {
+        Row: {
+          document_id: string
+          id: string
+          viewed_at: string
+        }
+        Insert: {
+          document_id: string
+          id?: string
+          viewed_at?: string
+        }
+        Update: {
+          document_id?: string
+          id?: string
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_views_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           allow_comments: boolean
