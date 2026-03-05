@@ -46,11 +46,11 @@ const DocumentThumbnail = ({ fileUrl, title, thumbnailUrl, className = "" }: Doc
   // Custom thumbnail: show full image without cropping
   if (thumbnailUrl) {
     return (
-      <div className={`bg-muted rounded-lg overflow-hidden flex items-center justify-center ${className}`}>
+      <div className={`bg-muted rounded-lg overflow-hidden ${className}`}>
         <img
           src={thumbnailUrl}
           alt={title}
-          className="w-full h-full object-contain"
+          className="w-full h-full object-cover"
         />
       </div>
     );
