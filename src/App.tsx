@@ -11,6 +11,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import Explore from "./pages/Explore";
 import Dashboard from "./pages/Dashboard";
 import DocumentView from "./pages/DocumentView";
+import DocumentStats from "./pages/DocumentStats";
 import Profile from "./pages/Profile";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/about" element={<About />} />
             <Route path="/d/:id" element={<DocumentView />} />
+            <Route path="/d/:id/stats" element={<DocumentStats />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

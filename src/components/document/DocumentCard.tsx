@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Eye,
@@ -8,6 +8,7 @@ import {
   MoreVertical,
   Pencil,
   Trash2,
+  BarChart3,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -36,6 +37,7 @@ interface DocumentCardProps {
 }
 
 const DocumentCard = ({ doc, onCopyLink, onOpenQR, onEdit, onDelete }: DocumentCardProps) => {
+  const navigate = useNavigate();
   return (
     <Link
       to={`/d/${doc.slug || doc.id}`}
@@ -99,6 +101,15 @@ const DocumentCard = ({ doc, onCopyLink, onOpenQR, onEdit, onDelete }: DocumentC
             onClick={() => onOpenQR({ id: doc.id, title: doc.title })}
           >
             <QrCode className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => navigate(`/d/${doc.id}/stats`)}
+            title="View Stats"
+          >
+            <BarChart3 className="h-4 w-4" />
           </Button>
           <div className="flex-1" />
           <DropdownMenu>
