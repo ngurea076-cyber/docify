@@ -248,78 +248,80 @@ const DocumentView = () => {
       </header>
 
       <div className="w-[90vw] mx-auto py-4">
-        {/* Book Viewer - Full width, auto height */}
-        <div>
-          <BookViewer 
-            fileUrl={pdfUrl || undefined}
-            onPageChange={setCurrentPage}
-          />
-        </div>
-
-        {/* Owner Section */}
-        <div className="mt-6 space-y-4">
-          <DocumentOwnerSection
-            documentId={document.id}
-            owner={document.profiles}
-            documentType={document.document_type}
-            description={document.description}
-            country={document.country}
-            city={document.city}
-            area={document.area}
-            googleMapsUrl={document.google_maps_url}
-          />
-
-          {/* Order CTA for menus with order_url */}
-          {document.document_type === "menu" && document.order_url && (
-            <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl border border-primary/20 p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
-                  <ShoppingCart className="h-6 w-6 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold">Ready to order?</h3>
-                  <p className="text-sm text-muted-foreground">Place your order via WhatsApp or website</p>
-                </div>
-                <Button 
-                  variant="hero" 
-                  className="gap-2 shrink-0"
-                  onClick={() => window.open(document.order_url!, "_blank")}
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  Order Now
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Donation CTA - show for non-menu documents or menus without order_url */}
-          {document.allow_donations && !(document.document_type === "menu" && document.order_url) && (
-            <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-2xl border border-accent/20 p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center shrink-0">
-                  <Heart className="h-6 w-6 text-accent" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold">Support the creator</h3>
-                  <p className="text-sm text-muted-foreground">Show appreciation with a donation</p>
-                </div>
-                <Button variant="hero" className="gap-2 shrink-0">
-                  <DollarSign className="h-4 w-4" />
-                  Donate
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Comments Section - Embedded with pagination */}
-          {document.allow_comments && (
-            <CommentsSection 
-              documentId={document.id} 
-              allowComments={document.allow_comments}
-              embedded={true}
-              pageSize={5}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Book Viewer - Left side */}
+          <div className="lg:col-span-2">
+            <BookViewer 
+              fileUrl={pdfUrl || undefined}
+              onPageChange={setCurrentPage}
             />
-          )}
+          </div>
+
+          {/* Right sidebar: Owner + Order/Donate + Comments */}
+          <div className="space-y-4">
+            <DocumentOwnerSection
+              documentId={document.id}
+              owner={document.profiles}
+              documentType={document.document_type}
+              description={document.description}
+              country={document.country}
+              city={document.city}
+              area={document.area}
+              googleMapsUrl={document.google_maps_url}
+            />
+
+            {/* Order CTA for menus with order_url */}
+            {document.document_type === "menu" && document.order_url && (
+              <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl border border-primary/20 p-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
+                    <ShoppingCart className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold">Ready to order?</h3>
+                    <p className="text-sm text-muted-foreground">Place your order via WhatsApp or website</p>
+                  </div>
+                  <Button 
+                    variant="hero" 
+                    className="gap-2 shrink-0"
+                    onClick={() => window.open(document.order_url!, "_blank")}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Order Now
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Donation CTA */}
+            {document.allow_donations && !(document.document_type === "menu" && document.order_url) && (
+              <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-2xl border border-accent/20 p-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center shrink-0">
+                    <Heart className="h-6 w-6 text-accent" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold">Support the creator</h3>
+                    <p className="text-sm text-muted-foreground">Show appreciation with a donation</p>
+                  </div>
+                  <Button variant="hero" className="gap-2 shrink-0">
+                    <DollarSign className="h-4 w-4" />
+                    Donate
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Comments Section */}
+            {document.allow_comments && (
+              <CommentsSection 
+                documentId={document.id} 
+                allowComments={document.allow_comments}
+                embedded={true}
+                pageSize={5}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>
