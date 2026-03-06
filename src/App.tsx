@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Explore from "./pages/Explore";
 import Dashboard from "./pages/Dashboard";
 import DocumentView from "./pages/DocumentView";
