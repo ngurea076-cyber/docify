@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { FileText, Menu, X } from "lucide-react";
+import { FileText, Menu, X, LayoutDashboard } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, loading } = useAuth();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
@@ -30,12 +32,23 @@ const Header = () => {
 
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" asChild>
-              <Link to="/login">Sign In</Link>
-            </Button>
-            <Button variant="hero" asChild>
-              <Link to="/signup">Get Started</Link>
-            </Button>
+            {!loading && user ? (
+              <Button variant="hero" asChild>
+                <Link to="/dashboard">
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  Dashboard
+                </Link>
+              </Button>
+            ) : (
+              <>
+                <Button variant="ghost" asChild>
+                  <Link to="/login">Sign In</Link>
+                </Button>
+                <Button variant="hero" asChild>
+                  <Link to="/signup">Get Started</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -66,12 +79,23 @@ const Header = () => {
                 About
               </Link>
               <div className="flex flex-col gap-2 pt-4 border-t border-border/50">
-                <Button variant="ghost" asChild className="justify-start">
-                  <Link to="/login" onClick={() => setMobileMenuOpen(false)}>Sign In</Link>
-                </Button>
-                <Button variant="hero" asChild>
-                  <Link to="/signup" onClick={() => setMobileMenuOpen(false)}>Get Started</Link>
-                </Button>
+                {!loading && user ? (
+                  <Button variant="hero" asChild>
+                    <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      Dashboard
+                    </Link>
+                  </Button>
+                ) : (
+                  <>
+                    <Button variant="ghost" asChild className="justify-start">
+                      <Link to="/login" onClick={() => setMobileMenuOpen(false)}>Sign In</Link>
+                    </Button>
+                    <Button variant="hero" asChild>
+                      <Link to="/signup" onClick={() => setMobileMenuOpen(false)}>Get Started</Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </nav>
           </div>
