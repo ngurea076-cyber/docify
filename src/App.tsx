@@ -15,6 +15,7 @@ import DocumentView from "./pages/DocumentView";
 import DocumentStats from "./pages/DocumentStats";
 import Profile from "./pages/Profile";
 import About from "./pages/About";
+import UserProfile from "./pages/UserProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
