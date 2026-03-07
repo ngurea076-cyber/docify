@@ -27,6 +27,7 @@ import {
   Pencil,
   Trash2,
   Camera,
+  ExternalLink,
 } from "lucide-react";
 import DocumentCard from "@/components/document/DocumentCard";
 import { useAuth } from "@/contexts/AuthContext";
@@ -406,6 +407,14 @@ const Dashboard = () => {
               active={activeSection === "profile"} 
               onClick={() => setActiveSection("profile")}
             />
+            {profile?.username && (
+              <NavButton 
+                icon={ExternalLink} 
+                label="Public Profile" 
+                active={false} 
+                onClick={() => navigate(`/u/${profile.username}`)}
+              />
+            )}
           </nav>
 
           {/* User */}
