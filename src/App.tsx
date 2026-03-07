@@ -15,6 +15,7 @@ import DocumentView from "./pages/DocumentView";
 import DocumentStats from "./pages/DocumentStats";
 import Profile from "./pages/Profile";
 import About from "./pages/About";
+import UserProfile from "./pages/UserProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/about" element={<About />} />
+            <Route path="/u/:username" element={<UserProfile />} />
             <Route path="/d/:id" element={<DocumentView />} />
             <Route path="/d/:id/stats" element={<DocumentStats />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
