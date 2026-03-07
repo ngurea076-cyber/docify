@@ -27,6 +27,7 @@ import {
   Pencil,
   Trash2,
   Camera,
+  ExternalLink,
 } from "lucide-react";
 import DocumentCard from "@/components/document/DocumentCard";
 import { useAuth } from "@/contexts/AuthContext";
