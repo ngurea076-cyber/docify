@@ -37,6 +37,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/about" element={<About />} />
+            <Route path="/u/:username" element={<UserProfile />} />
             <Route path="/d/:id" element={<DocumentView />} />
             <Route path="/d/:id/stats" element={<DocumentStats />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
