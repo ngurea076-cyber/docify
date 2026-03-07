@@ -170,9 +170,13 @@ const DocumentOwnerSection = ({
 
         {/* Owner Info */}
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-semibold truncate">
-            {owner?.username || "Anonymous"}
-          </h3>
+          {owner?.username ? (
+            <Link to={`/u/${owner.username}`} className="text-lg font-semibold truncate hover:text-primary transition-colors">
+              {owner.username}
+            </Link>
+          ) : (
+            <h3 className="text-lg font-semibold truncate">Anonymous</h3>
+          )}
           
           {/* Description/Bio */}
           {displayDescription && (
