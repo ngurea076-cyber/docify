@@ -407,6 +407,14 @@ const Dashboard = () => {
               active={activeSection === "profile"} 
               onClick={() => setActiveSection("profile")}
             />
+            {profile?.username && (
+              <NavButton 
+                icon={ExternalLink} 
+                label="Public Profile" 
+                active={false} 
+                onClick={() => navigate(`/u/${profile.username}`)}
+              />
+            )}
           </nav>
 
           {/* User */}
