@@ -17,6 +17,9 @@ import Profile from "./pages/Profile";
 import About from "./pages/About";
 import UserProfile from "./pages/UserProfile";
 import NotFound from "./pages/NotFound";
+import PayoutSettings from "./pages/PayoutSettings";
+import Earnings from "./pages/Earnings";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +43,9 @@ const App = () => (
             <Route path="/u/:username" element={<UserProfile />} />
             <Route path="/d/:id" element={<DocumentView />} />
             <Route path="/d/:id/stats" element={<DocumentStats />} />
+            <Route path="/payout-settings" element={<PayoutSettings />} />
+            <Route path="/earnings" element={<Earnings />} />
+            <Route path="/admin" element={<AdminDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
