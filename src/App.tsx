@@ -17,6 +17,9 @@ import Profile from "./pages/Profile";
 import About from "./pages/About";
 import UserProfile from "./pages/UserProfile";
 import NotFound from "./pages/NotFound";
+import PayoutSettings from "./pages/PayoutSettings";
+import Earnings from "./pages/Earnings";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
