@@ -397,9 +397,15 @@ const Dashboard = () => {
             />
             <NavButton 
               icon={CreditCard}
-              label="Donations" 
-              active={activeSection === "donations"} 
-              onClick={() => setActiveSection("donations")}
+              label="Earnings" 
+              active={false} 
+              onClick={() => navigate("/earnings")}
+            />
+            <NavButton 
+              icon={Settings}
+              label="Payout Settings" 
+              active={false} 
+              onClick={() => navigate("/payout-settings")}
             />
             <NavButton 
               icon={User} 
