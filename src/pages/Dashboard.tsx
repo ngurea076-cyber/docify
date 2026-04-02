@@ -725,20 +725,7 @@ const Dashboard = () => {
 
           {activeSection === "profile" && (
             <div className="max-w-2xl">
-              <Tabs defaultValue="profile" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-8">
-                  <TabsTrigger value="profile" className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    Profile
-                  </TabsTrigger>
-                  <TabsTrigger value="payment" className="flex items-center gap-2">
-                    <CreditCard className="h-4 w-4" />
-                    Payment
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="profile">
-                  <Card>
+              <Card>
                     <CardHeader>
                       <CardTitle>Profile Information</CardTitle>
                       <CardDescription>
@@ -842,81 +829,33 @@ const Dashboard = () => {
                           "Save Profile"
                         )}
                       </Button>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
 
-                <TabsContent value="payment">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>M-Pesa Payment Settings</CardTitle>
-                      <CardDescription>
-                        Configure your M-Pesa details to receive donations from viewers
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      <div className="p-4 bg-accent/20 rounded-lg border border-accent/30">
-                        <p className="text-sm text-muted-foreground">
-                          <strong>Note:</strong> You can set up either a Paybill number or a Till number. 
-                          Donors will see these details when they choose to support your content.
-                        </p>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="paybill">Paybill Number</Label>
-                        <Input
-                          id="paybill"
-                          type="text"
-                          placeholder="e.g., 123456"
-                          value={paybill}
-                          onChange={(e) => setPaybill(e.target.value)}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Enter your M-Pesa Paybill number for business payments
-                        </p>
-                      </div>
-
-                      <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                          <span className="w-full border-t" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-card px-2 text-muted-foreground">or</span>
+                      {/* Payment & Payout Quick Links */}
+                      <div className="border-t border-border pt-6 space-y-3">
+                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Payment & Payouts</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <Button variant="outline" className="justify-start gap-2 h-auto py-3" onClick={() => navigate("/payout-settings")}>
+                            <Settings className="h-4 w-4" />
+                            <div className="text-left">
+                              <p className="text-sm font-medium">Payout Settings</p>
+                              <p className="text-xs text-muted-foreground">
+                                {!payoutStatus ? "Connect your bank" : payoutStatus === "approved" ? "Approved ✓" : payoutStatus === "pending" ? "Pending verification" : "Needs attention"}
+                              </p>
+                            </div>
+                          </Button>
+                          <Button variant="outline" className="justify-start gap-2 h-auto py-3" onClick={() => navigate("/earnings")}>
+                            <CreditCard className="h-4 w-4" />
+                            <div className="text-left">
+                              <p className="text-sm font-medium">Earnings & Withdrawals</p>
+                              <p className="text-xs text-muted-foreground">
+                                Balance: KES {((creatorBalance?.available_balance || 0) / 100).toLocaleString()}
+                              </p>
+                            </div>
+                          </Button>
                         </div>
                       </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="till">Till Number</Label>
-                        <Input
-                          id="till"
-                          type="text"
-                          placeholder="e.g., 7654321"
-                          value={tillNumber}
-                          onChange={(e) => setTillNumber(e.target.value)}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Enter your M-Pesa Till number for Buy Goods payments
-                        </p>
-                      </div>
-
-                      <Button 
-                        onClick={handleSaveProfile} 
-                        disabled={savingProfile}
-                        className="w-full"
-                      >
-                        {savingProfile ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Saving...
-                          </>
-                        ) : (
-                          "Save Payment Settings"
-                        )}
-                      </Button>
                     </CardContent>
                   </Card>
-                </TabsContent>
-              </Tabs>
             </div>
           )}
         </div>
