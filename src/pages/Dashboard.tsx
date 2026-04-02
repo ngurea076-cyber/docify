@@ -341,11 +341,32 @@ const Dashboard = () => {
     }
   };
 
+  const [creatorBalance, setCreatorBalance] = useState<any>(null);
+  const [payoutStatus, setPayoutStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      fetchPaymentData();
+    }
+  }, [user]);
+
+  const fetchPaymentData = async () => {
+    const [balanceRes, payoutRes] = await Promise.all([
+      supabase.from("creator_balances").select("*").eq("user_id", user?.id).maybeSingle(),
+      supabase.from("creator_payouts").select("status").eq("user_id", user?.id).maybeSingle(),
+    ]);
+    setCreatorBalance(balanceRes.data);
+    setPayoutStatus(payoutRes.data?.status || null);
+  };
+
+  const totalViews = documents.reduce((sum, d) => sum + d.view_count, 0);
+  const totalDownloads = documents.reduce((sum, d) => sum + d.download_count, 0);
+
   const stats = [
-    { label: "Total Views", value: "12,847", change: "+23%", icon: Eye },
-    { label: "Downloads", value: "3,291", change: "+12%", icon: Download },
-    { label: "QR Scans", value: "856", change: "+45%", icon: QrCode },
-    { label: "Donations", value: "KES 234", change: "+8%", icon: CreditCard },
+    { label: "Total Views", value: totalViews.toLocaleString(), icon: Eye },
+    { label: "Downloads", value: totalDownloads.toLocaleString(), icon: Download },
+    { label: "Documents", value: documents.length.toString(), icon: FileText },
+    { label: "Available Balance", value: `KES ${((creatorBalance?.available_balance || 0) / 100).toLocaleString()}`, icon: CreditCard },
   ];
 
   if (loading) {
