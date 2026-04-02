@@ -544,6 +544,57 @@ const Dashboard = () => {
                 ))}
               </div>
 
+              {/* Payment Quick Actions */}
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/earnings")}>
+                  <CardContent className="p-5">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                        <CreditCard className="h-5 w-5 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="font-semibold">Earnings & Withdrawals</p>
+                        <p className="text-sm text-muted-foreground">
+                          Total: KES {((creatorBalance?.total_earnings || 0) / 100).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/payout-settings")}>
+                  <CardContent className="p-5">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                        <Settings className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="font-semibold">Payout Settings</p>
+                        <p className="text-sm text-muted-foreground">
+                          {!payoutStatus ? "Not connected" : payoutStatus === "approved" ? "Approved" : payoutStatus === "pending" ? "Pending verification" : "Rejected"}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {profile?.username && (
+                  <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/u/${profile.username}`)}>
+                    <CardContent className="p-5">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                          <ExternalLink className="h-5 w-5 text-purple-600" />
+                        </div>
+                        <div>
+                          <p className="font-semibold">Public Profile</p>
+                          <p className="text-sm text-muted-foreground">View your public page</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+
               {/* Documents Section */}
               <div>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
