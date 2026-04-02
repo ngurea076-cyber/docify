@@ -326,7 +326,7 @@ const DocumentView = () => {
                     <h3 className="font-semibold">Support the creator</h3>
                     <p className="text-sm text-muted-foreground">Show appreciation with a donation</p>
                   </div>
-                  <Button variant="hero" className="gap-2 shrink-0">
+                  <Button variant="hero" className="gap-2 shrink-0" onClick={() => setDonateModalOpen(true)}>
                     <DollarSign className="h-4 w-4" />
                     Donate
                   </Button>
