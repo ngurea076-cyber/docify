@@ -74,7 +74,9 @@ const DocumentView = () => {
             profiles:user_id (
               username,
               avatar_url,
-              bio
+              bio,
+              mpesa_paybill,
+              mpesa_till
             )
           `)
           .eq(column, id)
