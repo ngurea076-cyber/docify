@@ -539,7 +539,6 @@ const Dashboard = () => {
                     </div>
                     <div className="flex items-end justify-between">
                       <span className="text-2xl font-bold">{stat.value}</span>
-                      <span className="text-sm text-accent font-medium">{stat.change}</span>
                     </div>
                   </div>
                 ))}
