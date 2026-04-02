@@ -346,6 +346,75 @@ const DocumentView = () => {
           </div>
         </div>
       </div>
+
+      {/* Donate Modal */}
+      <Dialog open={donateModalOpen} onOpenChange={setDonateModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Heart className="h-5 w-5 text-accent" />
+              Support {document?.profiles?.username || "the creator"}
+            </DialogTitle>
+            <DialogDescription>
+              Send a donation via M-Pesa using the details below
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {document?.profiles?.mpesa_paybill && (
+              <div className="flex items-center justify-between p-4 bg-muted rounded-xl border border-border">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Paybill Number</p>
+                  <p className="text-xl font-bold mt-1">{document.profiles.mpesa_paybill}</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleCopyPayment(document.profiles!.mpesa_paybill!, "Paybill")}
+                >
+                  {copiedPayment === "Paybill" ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            )}
+
+            {document?.profiles?.mpesa_paybill && document?.profiles?.mpesa_till && (
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">or</span>
+                </div>
+              </div>
+            )}
+
+            {document?.profiles?.mpesa_till && (
+              <div className="flex items-center justify-between p-4 bg-muted rounded-xl border border-border">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Till Number</p>
+                  <p className="text-xl font-bold mt-1">{document.profiles.mpesa_till}</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleCopyPayment(document.profiles!.mpesa_till!, "Till")}
+                >
+                  {copiedPayment === "Till" ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            )}
+
+            {!document?.profiles?.mpesa_paybill && !document?.profiles?.mpesa_till && (
+              <div className="text-center py-4">
+                <p className="text-muted-foreground">The creator hasn't set up payment details yet.</p>
+              </div>
+            )}
+
+            <p className="text-xs text-muted-foreground text-center">
+              Open your M-Pesa app, select Lipa na M-Pesa, then use the {document?.profiles?.mpesa_paybill ? "Pay Bill" : "Buy Goods"} option with the number above.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
