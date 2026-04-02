@@ -3,6 +3,13 @@ import { Link, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   FileText,
   Download,
   Share2,
@@ -11,6 +18,8 @@ import {
   DollarSign,
   ShoppingCart,
   ExternalLink,
+  Copy,
+  Check,
 } from "lucide-react";
 import BookViewer from "@/components/document/BookViewer";
 import CommentsSection from "@/components/document/CommentsSection";
@@ -26,6 +35,8 @@ interface DocumentWithProfile extends Document {
     username: string | null;
     avatar_url: string | null;
     bio: string | null;
+    mpesa_paybill: string | null;
+    mpesa_till: string | null;
   } | null;
 }
 
