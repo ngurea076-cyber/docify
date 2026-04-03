@@ -66,6 +66,7 @@ Deno.serve(async (req) => {
         currency: "KES",
         subaccount: payout.paystack_subaccount_code,
         bearer: "subaccount",
+        ...(channel ? { channels: [channel] } : {}),
         metadata: {
           document_id: doc.id,
           document_title: doc.title,
