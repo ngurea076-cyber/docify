@@ -1,0 +1,1 @@
+ALTER TABLE public.creator_payouts ADD COLUMN paystack_subaccount_code text;

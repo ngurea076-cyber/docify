@@ -9,6 +9,7 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const paystackSecretKey = Deno.env.get("PAYSTACK_SECRET_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     const authHeader = req.headers.get("Authorization");
@@ -25,9 +26,45 @@ Deno.serve(async (req) => {
     if (!payout_id || !action) throw new Error("Missing required fields");
 
     if (action === "approve") {
+      // Fetch payout details to create Paystack subaccount
+      const { data: payout, error: fetchError } = await supabase
+        .from("creator_payouts")
+        .select("*")
+        .eq("id", payout_id)
+        .single();
+      if (fetchError || !payout) throw new Error("Payout record not found");
+
+      let subaccountCode = payout.paystack_subaccount_code;
+
+      // Create Paystack subaccount if not already created
+      if (!subaccountCode) {
+        const subaccountRes = await fetch("https://api.paystack.co/subaccount", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${paystackSecretKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            business_name: payout.business_name,
+            bank_code: payout.bank_code,
+            account_number: payout.account_number,
+            percentage_charge: 5, // 5% platform fee
+          }),
+        });
+
+        const subaccountData = await subaccountRes.json();
+        if (!subaccountRes.ok || !subaccountData.status) {
+          console.error("Paystack subaccount creation failed:", subaccountData);
+          throw new Error(`Failed to create Paystack subaccount: ${subaccountData.message || "Unknown error"}`);
+        }
+
+        subaccountCode = subaccountData.data.subaccount_code;
+      }
+
       const { error } = await supabase.from("creator_payouts").update({
         status: "approved",
         rejection_reason: null,
+        paystack_subaccount_code: subaccountCode,
         updated_at: new Date().toISOString(),
       }).eq("id", payout_id);
       if (error) throw error;

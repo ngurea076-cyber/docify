@@ -3,13 +3,6 @@ import { Link, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   FileText,
   Download,
   Share2,
@@ -18,9 +11,8 @@ import {
   DollarSign,
   ShoppingCart,
   ExternalLink,
-  Copy,
-  Check,
 } from "lucide-react";
+import DonateModal from "@/components/document/DonateModal";
 import BookViewer from "@/components/document/BookViewer";
 import CommentsSection from "@/components/document/CommentsSection";
 import DocumentOwnerSection from "@/components/document/DocumentOwnerSection";
@@ -47,7 +39,6 @@ const DocumentView = () => {
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [donateModalOpen, setDonateModalOpen] = useState(false);
-  const [copiedPayment, setCopiedPayment] = useState<string | null>(null);
   const [document, setDocument] = useState<DocumentWithProfile | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -170,12 +161,6 @@ const DocumentView = () => {
     }
   };
 
-  const handleCopyPayment = (value: string, label: string) => {
-    navigator.clipboard.writeText(value);
-    setCopiedPayment(label);
-    toast({ title: "Copied!", description: `${label} copied to clipboard` });
-    setTimeout(() => setCopiedPayment(null), 2000);
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -348,73 +333,14 @@ const DocumentView = () => {
       </div>
 
       {/* Donate Modal */}
-      <Dialog open={donateModalOpen} onOpenChange={setDonateModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Heart className="h-5 w-5 text-accent" />
-              Support {document?.profiles?.username || "the creator"}
-            </DialogTitle>
-            <DialogDescription>
-              Send a donation via M-Pesa using the details below
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            {document?.profiles?.mpesa_paybill && (
-              <div className="flex items-center justify-between p-4 bg-muted rounded-xl border border-border">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Paybill Number</p>
-                  <p className="text-xl font-bold mt-1">{document.profiles.mpesa_paybill}</p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleCopyPayment(document.profiles!.mpesa_paybill!, "Paybill")}
-                >
-                  {copiedPayment === "Paybill" ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </div>
-            )}
-
-            {document?.profiles?.mpesa_paybill && document?.profiles?.mpesa_till && (
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">or</span>
-                </div>
-              </div>
-            )}
-
-            {document?.profiles?.mpesa_till && (
-              <div className="flex items-center justify-between p-4 bg-muted rounded-xl border border-border">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Till Number</p>
-                  <p className="text-xl font-bold mt-1">{document.profiles.mpesa_till}</p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleCopyPayment(document.profiles!.mpesa_till!, "Till")}
-                >
-                  {copiedPayment === "Till" ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </div>
-            )}
-
-            {!document?.profiles?.mpesa_paybill && !document?.profiles?.mpesa_till && (
-              <div className="text-center py-4">
-                <p className="text-muted-foreground">The creator hasn't set up payment details yet.</p>
-              </div>
-            )}
-
-            <p className="text-xs text-muted-foreground text-center">
-              Open your M-Pesa app, select Lipa na M-Pesa, then use the {document?.profiles?.mpesa_paybill ? "Pay Bill" : "Buy Goods"} option with the number above.
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <DonateModal
+        open={donateModalOpen}
+        onOpenChange={setDonateModalOpen}
+        documentId={document.id}
+        creatorUsername={document.profiles?.username || null}
+        mpesaPaybill={document.profiles?.mpesa_paybill || null}
+        mpesaTill={document.profiles?.mpesa_till || null}
+      />
     </div>
   );
 };
