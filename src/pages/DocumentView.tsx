@@ -46,7 +46,6 @@ const DocumentView = () => {
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [donateModalOpen, setDonateModalOpen] = useState(false);
-  const [copiedPayment, setCopiedPayment] = useState<string | null>(null);
   const [document, setDocument] = useState<DocumentWithProfile | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
