@@ -18,9 +18,8 @@ import {
   DollarSign,
   ShoppingCart,
   ExternalLink,
-  Copy,
-  Check,
 } from "lucide-react";
+import DonateModal from "@/components/document/DonateModal";
 import BookViewer from "@/components/document/BookViewer";
 import CommentsSection from "@/components/document/CommentsSection";
 import DocumentOwnerSection from "@/components/document/DocumentOwnerSection";
