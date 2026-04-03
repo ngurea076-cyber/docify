@@ -168,12 +168,6 @@ const DocumentView = () => {
     }
   };
 
-  const handleCopyPayment = (value: string, label: string) => {
-    navigator.clipboard.writeText(value);
-    setCopiedPayment(label);
-    toast({ title: "Copied!", description: `${label} copied to clipboard` });
-    setTimeout(() => setCopiedPayment(null), 2000);
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
