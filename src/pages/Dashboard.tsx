@@ -442,6 +442,14 @@ const Dashboard = () => {
                 onClick={() => navigate(`/u/${profile.username}`)}
               />
             )}
+            <div className="pt-4 mt-4 border-t border-border">
+              <NavButton 
+                icon={LogOut} 
+                label="Sign Out" 
+                active={false} 
+                onClick={handleSignOut}
+              />
+            </div>
           </nav>
 
           {/* User */}

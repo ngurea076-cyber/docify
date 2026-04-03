@@ -101,6 +101,7 @@ export type Database = {
           id: string
           id_document_url: string
           national_id: string
+          paystack_subaccount_code: string | null
           phone: string
           rejection_reason: string | null
           status: string
@@ -119,6 +120,7 @@ export type Database = {
           id?: string
           id_document_url: string
           national_id: string
+          paystack_subaccount_code?: string | null
           phone: string
           rejection_reason?: string | null
           status?: string
@@ -137,6 +139,7 @@ export type Database = {
           id?: string
           id_document_url?: string
           national_id?: string
+          paystack_subaccount_code?: string | null
           phone?: string
           rejection_reason?: string | null
           status?: string
