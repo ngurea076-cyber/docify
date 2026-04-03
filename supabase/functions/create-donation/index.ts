@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
     const paystackSecretKey = Deno.env.get("PAYSTACK_SECRET_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    const { document_id, amount, email } = await req.json();
+    const { document_id, amount, email, channel } = await req.json();
 
     if (!document_id || !amount || !email) {
       throw new Error("Missing required fields: document_id, amount, email");
