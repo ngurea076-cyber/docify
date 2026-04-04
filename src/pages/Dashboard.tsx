@@ -28,9 +28,11 @@ import {
   Trash2,
   Camera,
   ExternalLink,
+  Shield,
 } from "lucide-react";
 import DocumentCard from "@/components/document/DocumentCard";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdminRole } from "@/hooks/useAdminRole";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -114,6 +116,7 @@ const Dashboard = () => {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [bio, setBio] = useState("");
   const { user, loading, signOut } = useAuth();
+  const { isAdmin } = useAdminRole();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -442,7 +445,15 @@ const Dashboard = () => {
                 onClick={() => navigate(`/u/${profile.username}`)}
               />
             )}
-            <div className="pt-4 mt-4 border-t border-border">
+            <div className="pt-4 mt-4 border-t border-border space-y-1">
+              {isAdmin && (
+                <NavButton 
+                  icon={Shield} 
+                  label="Admin Dashboard" 
+                  active={false} 
+                  onClick={() => navigate("/admin")}
+                />
+              )}
               <NavButton 
                 icon={LogOut} 
                 label="Sign Out" 
