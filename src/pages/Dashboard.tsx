@@ -444,7 +444,15 @@ const Dashboard = () => {
                 onClick={() => navigate(`/u/${profile.username}`)}
               />
             )}
-            <div className="pt-4 mt-4 border-t border-border">
+            <div className="pt-4 mt-4 border-t border-border space-y-1">
+              {isAdmin && (
+                <NavButton 
+                  icon={Shield} 
+                  label="Admin Dashboard" 
+                  active={false} 
+                  onClick={() => navigate("/admin")}
+                />
+              )}
               <NavButton 
                 icon={LogOut} 
                 label="Sign Out" 
