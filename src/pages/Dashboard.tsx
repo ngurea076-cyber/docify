@@ -116,6 +116,7 @@ const Dashboard = () => {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [bio, setBio] = useState("");
   const { user, loading, signOut } = useAuth();
+  const { isAdmin } = useAdminRole();
   const navigate = useNavigate();
   const { toast } = useToast();
 
