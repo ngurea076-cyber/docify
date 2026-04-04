@@ -862,6 +862,18 @@ const Dashboard = () => {
                           </Button>
                         </div>
                       </div>
+
+                      {/* Logout */}
+                      <div className="border-t border-border pt-6">
+                        <Button 
+                          variant="outline" 
+                          className="w-full justify-center gap-2 text-destructive hover:text-destructive-foreground hover:bg-destructive"
+                          onClick={handleSignOut}
+                        >
+                          <LogOut className="h-4 w-4" />
+                          Sign Out
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
             </div>
