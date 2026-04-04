@@ -514,6 +514,12 @@ const Dashboard = () => {
               <h1 className="text-xl font-semibold capitalize">{activeSection}</h1>
             </div>
             <div className="flex items-center gap-2">
+              {isAdmin && (
+                <Button variant="ghost" size="sm" className="gap-2 lg:hidden" onClick={() => navigate("/admin")}>
+                  <Shield className="h-4 w-4" />
+                  <span className="hidden sm:inline">Admin</span>
+                </Button>
+              )}
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full" />
