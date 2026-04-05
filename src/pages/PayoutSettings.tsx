@@ -54,6 +54,7 @@ const PayoutSettings = () => {
   const [accountNumber, setAccountNumber] = useState("");
   const [nationalId, setNationalId] = useState("");
   const [idFile, setIdFile] = useState<File | null>(null);
+  const [idFileBack, setIdFileBack] = useState<File | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   useEffect(() => {
