@@ -280,6 +280,10 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="support">
+            <AdminSupportChat />
+          </TabsContent>
         </Tabs>
 
         {/* View Payout Detail */}
