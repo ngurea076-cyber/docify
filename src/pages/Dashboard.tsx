@@ -982,3 +982,4 @@ const NavButton = ({ icon: Icon, label, active, onClick }: NavButtonProps) => {
 };
 
 export default Dashboard;
+
