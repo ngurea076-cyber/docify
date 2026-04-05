@@ -302,7 +302,8 @@ const AdminDashboard = () => {
                   <div><span className="text-muted-foreground">Bank:</span><br /><strong>{viewPayout.bank_name}</strong></div>
                   <div><span className="text-muted-foreground">Account:</span><br /><strong>{viewPayout.account_number}</strong></div>
                   <div><span className="text-muted-foreground">National ID:</span><br /><strong>{viewPayout.national_id}</strong></div>
-                  <div><span className="text-muted-foreground">ID Document:</span><br /><strong>{viewPayout.id_document_url}</strong></div>
+                  <div><span className="text-muted-foreground">ID Front:</span><br /><strong>{viewPayout.id_document_url}</strong></div>
+                  <div><span className="text-muted-foreground">ID Back:</span><br /><strong>{viewPayout.id_document_back_url || "Not uploaded"}</strong></div>
                 </div>
               </div>
             )}
