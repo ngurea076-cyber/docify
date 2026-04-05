@@ -11,8 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Loader2, CheckCircle, XCircle, Eye, Shield } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle, XCircle, Eye, Shield, MessageCircle } from "lucide-react";
 import Header from "@/components/layout/Header";
+import AdminSupportChat from "@/components/chat/AdminSupportChat";
 
 const AdminDashboard = () => {
   const { user, loading: authLoading } = useAuth();
@@ -163,6 +164,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="withdrawals">
               Withdrawals {pendingWithdrawals.length > 0 && <Badge variant="secondary" className="ml-2">{pendingWithdrawals.length}</Badge>}
             </TabsTrigger>
+            <TabsTrigger value="support">
+              <MessageCircle className="h-4 w-4 mr-1" />
+              Support
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="verifications">
@@ -275,6 +280,10 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="support">
+            <AdminSupportChat />
+          </TabsContent>
         </Tabs>
 
         {/* View Payout Detail */}
@@ -293,7 +302,8 @@ const AdminDashboard = () => {
                   <div><span className="text-muted-foreground">Bank:</span><br /><strong>{viewPayout.bank_name}</strong></div>
                   <div><span className="text-muted-foreground">Account:</span><br /><strong>{viewPayout.account_number}</strong></div>
                   <div><span className="text-muted-foreground">National ID:</span><br /><strong>{viewPayout.national_id}</strong></div>
-                  <div><span className="text-muted-foreground">ID Document:</span><br /><strong>{viewPayout.id_document_url}</strong></div>
+                  <div><span className="text-muted-foreground">ID Front:</span><br /><strong>{viewPayout.id_document_url}</strong></div>
+                  <div><span className="text-muted-foreground">ID Back:</span><br /><strong>{viewPayout.id_document_back_url || "Not uploaded"}</strong></div>
                 </div>
               </div>
             )}

@@ -54,6 +54,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import UploadPDFModal, { DocumentData } from "@/components/upload/UploadPDFModal";
 import QRCodeModal from "@/components/document/QRCodeModal";
+import SupportChat from "@/components/chat/SupportChat";
 
 interface Document {
   id: string;
@@ -953,6 +954,7 @@ const Dashboard = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <SupportChat />
     </div>
   );
 };
@@ -981,3 +983,4 @@ const NavButton = ({ icon: Icon, label, active, onClick }: NavButtonProps) => {
 };
 
 export default Dashboard;
+

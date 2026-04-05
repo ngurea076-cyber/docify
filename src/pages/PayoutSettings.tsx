@@ -54,6 +54,7 @@ const PayoutSettings = () => {
   const [accountNumber, setAccountNumber] = useState("");
   const [nationalId, setNationalId] = useState("");
   const [idFile, setIdFile] = useState<File | null>(null);
+  const [idFileBack, setIdFileBack] = useState<File | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   useEffect(() => {
@@ -123,10 +124,11 @@ const PayoutSettings = () => {
     setSaving(true);
     try {
       let idDocUrl = payout?.id_document_url || "";
+      let idDocBackUrl = (payout as any)?.id_document_back_url || "";
 
       if (idFile) {
         const fileExt = idFile.name.split(".").pop();
-        const filePath = `${user.id}/id-document.${fileExt}`;
+        const filePath = `${user.id}/id-document-front.${fileExt}`;
         const { error: uploadError } = await supabase.storage
           .from("id-documents")
           .upload(filePath, idFile, { upsert: true });
@@ -134,8 +136,18 @@ const PayoutSettings = () => {
         idDocUrl = filePath;
       }
 
-      if (!idDocUrl) {
-        toast({ title: "Error", description: "Please upload your government ID", variant: "destructive" });
+      if (idFileBack) {
+        const fileExt = idFileBack.name.split(".").pop();
+        const filePath = `${user.id}/id-document-back.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from("id-documents")
+          .upload(filePath, idFileBack, { upsert: true });
+        if (uploadError) throw uploadError;
+        idDocBackUrl = filePath;
+      }
+
+      if (!idDocUrl || !idDocBackUrl) {
+        toast({ title: "Error", description: "Please upload both front and back of your government ID", variant: "destructive" });
         setSaving(false);
         return;
       }
@@ -151,6 +163,7 @@ const PayoutSettings = () => {
         account_number: accountNumber,
         national_id: nationalId,
         id_document_url: idDocUrl,
+        id_document_back_url: idDocBackUrl,
         terms_accepted: true,
         status: "pending" as const,
       };
@@ -285,19 +298,38 @@ const PayoutSettings = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Government ID Upload *</Label>
+                  <Label>Government ID — Front *</Label>
                   <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
                     <input
                       type="file"
                       accept="image/*,.pdf"
                       onChange={e => setIdFile(e.target.files?.[0] || null)}
                       className="hidden"
-                      id="id-upload"
+                      id="id-upload-front"
                     />
-                    <label htmlFor="id-upload" className="cursor-pointer flex flex-col items-center gap-2">
+                    <label htmlFor="id-upload-front" className="cursor-pointer flex flex-col items-center gap-2">
                       <Upload className="h-8 w-8 text-muted-foreground" />
                       <span className="text-sm text-muted-foreground">
-                        {idFile ? idFile.name : payout?.id_document_url ? "Replace existing ID" : "Upload ID (image or PDF)"}
+                        {idFile ? idFile.name : payout?.id_document_url ? "Replace front ID" : "Upload front of ID"}
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Government ID — Back *</Label>
+                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={e => setIdFileBack(e.target.files?.[0] || null)}
+                      className="hidden"
+                      id="id-upload-back"
+                    />
+                    <label htmlFor="id-upload-back" className="cursor-pointer flex flex-col items-center gap-2">
+                      <Upload className="h-8 w-8 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        {idFileBack ? idFileBack.name : (payout as any)?.id_document_back_url ? "Replace back ID" : "Upload back of ID"}
                       </span>
                     </label>
                   </div>

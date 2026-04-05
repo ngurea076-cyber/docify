@@ -99,6 +99,7 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          id_document_back_url: string | null
           id_document_url: string
           national_id: string
           paystack_subaccount_code: string | null
@@ -118,6 +119,7 @@ export type Database = {
           created_at?: string
           email: string
           id?: string
+          id_document_back_url?: string | null
           id_document_url: string
           national_id: string
           paystack_subaccount_code?: string | null
@@ -137,6 +139,7 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          id_document_back_url?: string | null
           id_document_url?: string
           national_id?: string
           paystack_subaccount_code?: string | null
@@ -378,6 +381,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      support_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_admin_reply: boolean
+          is_read: boolean
+          message: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_admin_reply?: boolean
+          is_read?: boolean
+          message: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_admin_reply?: boolean
+          is_read?: boolean
+          message?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
