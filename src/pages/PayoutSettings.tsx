@@ -163,6 +163,7 @@ const PayoutSettings = () => {
         account_number: accountNumber,
         national_id: nationalId,
         id_document_url: idDocUrl,
+        id_document_back_url: idDocBackUrl,
         terms_accepted: true,
         status: "pending" as const,
       };
