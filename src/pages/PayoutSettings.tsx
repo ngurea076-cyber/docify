@@ -146,8 +146,8 @@ const PayoutSettings = () => {
         idDocBackUrl = filePath;
       }
 
-      if (!idDocUrl) {
-        toast({ title: "Error", description: "Please upload your government ID", variant: "destructive" });
+      if (!idDocUrl || !idDocBackUrl) {
+        toast({ title: "Error", description: "Please upload both front and back of your government ID", variant: "destructive" });
         setSaving(false);
         return;
       }
