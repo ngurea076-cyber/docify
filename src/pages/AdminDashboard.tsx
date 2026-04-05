@@ -11,8 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Loader2, CheckCircle, XCircle, Eye, Shield } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle, XCircle, Eye, Shield, MessageCircle } from "lucide-react";
 import Header from "@/components/layout/Header";
+import AdminSupportChat from "@/components/chat/AdminSupportChat";
 
 const AdminDashboard = () => {
   const { user, loading: authLoading } = useAuth();

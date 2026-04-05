@@ -298,19 +298,38 @@ const PayoutSettings = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Government ID Upload *</Label>
+                  <Label>Government ID — Front *</Label>
                   <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
                     <input
                       type="file"
                       accept="image/*,.pdf"
                       onChange={e => setIdFile(e.target.files?.[0] || null)}
                       className="hidden"
-                      id="id-upload"
+                      id="id-upload-front"
                     />
-                    <label htmlFor="id-upload" className="cursor-pointer flex flex-col items-center gap-2">
+                    <label htmlFor="id-upload-front" className="cursor-pointer flex flex-col items-center gap-2">
                       <Upload className="h-8 w-8 text-muted-foreground" />
                       <span className="text-sm text-muted-foreground">
-                        {idFile ? idFile.name : payout?.id_document_url ? "Replace existing ID" : "Upload ID (image or PDF)"}
+                        {idFile ? idFile.name : payout?.id_document_url ? "Replace front ID" : "Upload front of ID"}
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Government ID — Back *</Label>
+                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={e => setIdFileBack(e.target.files?.[0] || null)}
+                      className="hidden"
+                      id="id-upload-back"
+                    />
+                    <label htmlFor="id-upload-back" className="cursor-pointer flex flex-col items-center gap-2">
+                      <Upload className="h-8 w-8 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        {idFileBack ? idFileBack.name : (payout as any)?.id_document_back_url ? "Replace back ID" : "Upload back of ID"}
                       </span>
                     </label>
                   </div>
