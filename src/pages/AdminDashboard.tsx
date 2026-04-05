@@ -164,6 +164,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="withdrawals">
               Withdrawals {pendingWithdrawals.length > 0 && <Badge variant="secondary" className="ml-2">{pendingWithdrawals.length}</Badge>}
             </TabsTrigger>
+            <TabsTrigger value="support">
+              <MessageCircle className="h-4 w-4 mr-1" />
+              Support
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="verifications">
