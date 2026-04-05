@@ -954,6 +954,7 @@ const Dashboard = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <SupportChat />
     </div>
   );
 };

@@ -124,15 +124,26 @@ const PayoutSettings = () => {
     setSaving(true);
     try {
       let idDocUrl = payout?.id_document_url || "";
+      let idDocBackUrl = (payout as any)?.id_document_back_url || "";
 
       if (idFile) {
         const fileExt = idFile.name.split(".").pop();
-        const filePath = `${user.id}/id-document.${fileExt}`;
+        const filePath = `${user.id}/id-document-front.${fileExt}`;
         const { error: uploadError } = await supabase.storage
           .from("id-documents")
           .upload(filePath, idFile, { upsert: true });
         if (uploadError) throw uploadError;
         idDocUrl = filePath;
+      }
+
+      if (idFileBack) {
+        const fileExt = idFileBack.name.split(".").pop();
+        const filePath = `${user.id}/id-document-back.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from("id-documents")
+          .upload(filePath, idFileBack, { upsert: true });
+        if (uploadError) throw uploadError;
+        idDocBackUrl = filePath;
       }
 
       if (!idDocUrl) {
