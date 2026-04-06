@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Loader2, CheckCircle, XCircle, Eye, Shield, MessageCircle } from "lucide-react";
 import Header from "@/components/layout/Header";
 import AdminSupportChat from "@/components/chat/AdminSupportChat";
+import PayoutDetailView from "@/components/admin/PayoutDetailView";
 
 const AdminDashboard = () => {
   const { user, loading: authLoading } = useAuth();
@@ -293,19 +294,7 @@ const AdminDashboard = () => {
               <DialogTitle>Payout Details</DialogTitle>
             </DialogHeader>
             {viewPayout && (
-              <div className="space-y-3 text-sm">
-                <div className="grid grid-cols-2 gap-3">
-                  <div><span className="text-muted-foreground">Business:</span><br /><strong>{viewPayout.business_name}</strong></div>
-                  <div><span className="text-muted-foreground">Name:</span><br /><strong>{viewPayout.account_holder_name}</strong></div>
-                  <div><span className="text-muted-foreground">Email:</span><br /><strong>{viewPayout.email}</strong></div>
-                  <div><span className="text-muted-foreground">Phone:</span><br /><strong>{viewPayout.phone}</strong></div>
-                  <div><span className="text-muted-foreground">Bank:</span><br /><strong>{viewPayout.bank_name}</strong></div>
-                  <div><span className="text-muted-foreground">Account:</span><br /><strong>{viewPayout.account_number}</strong></div>
-                  <div><span className="text-muted-foreground">National ID:</span><br /><strong>{viewPayout.national_id}</strong></div>
-                  <div><span className="text-muted-foreground">ID Front:</span><br /><strong>{viewPayout.id_document_url}</strong></div>
-                  <div><span className="text-muted-foreground">ID Back:</span><br /><strong>{viewPayout.id_document_back_url || "Not uploaded"}</strong></div>
-                </div>
-              </div>
+              <PayoutDetailView payout={viewPayout} />
             )}
           </DialogContent>
         </Dialog>

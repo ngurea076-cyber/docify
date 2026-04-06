@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
     const paystackSecretKey = Deno.env.get("PAYSTACK_SECRET_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    const { document_id, amount, email, channel } = await req.json();
+    const { document_id, amount, email, channel, phone } = await req.json();
 
     if (!document_id || !amount || !email) {
       throw new Error("Missing required fields: document_id, amount, email");
@@ -26,6 +26,10 @@ Deno.serve(async (req) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       throw new Error("Invalid email address");
+    }
+
+    if (channel === "mobile_money" && !phone) {
+      throw new Error("Phone number is required for M-Pesa payments");
     }
 
     // Fetch document to get creator's user_id
@@ -53,26 +57,43 @@ Deno.serve(async (req) => {
     // Amount in kobo (Paystack uses smallest currency unit)
     const amountInKobo = Math.round(amountNum * 100);
 
-    // Initialize Paystack transaction with subaccount
+    // Build Paystack payload
+    const paystackPayload: Record<string, unknown> = {
+      email,
+      amount: amountInKobo,
+      currency: "KES",
+      subaccount: payout.paystack_subaccount_code,
+      bearer: "subaccount",
+      metadata: {
+        document_id: doc.id,
+        document_title: doc.title,
+        type: "donation",
+      },
+    };
+
+    if (channel === "mobile_money") {
+      paystackPayload.channels = ["mobile_money"];
+      // Format phone for Paystack (needs country code)
+      let formattedPhone = phone.replace(/\s+/g, "");
+      if (formattedPhone.startsWith("0")) {
+        formattedPhone = "254" + formattedPhone.slice(1);
+      } else if (formattedPhone.startsWith("+")) {
+        formattedPhone = formattedPhone.slice(1);
+      }
+      paystackPayload.mobile_money = {
+        phone: formattedPhone,
+        provider: "mpesa",
+      };
+    }
+
+    // Initialize Paystack transaction
     const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${paystackSecretKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        email,
-        amount: amountInKobo,
-        currency: "KES",
-        subaccount: payout.paystack_subaccount_code,
-        bearer: "subaccount",
-        ...(channel ? { channels: [channel] } : {}),
-        metadata: {
-          document_id: doc.id,
-          document_title: doc.title,
-          type: "donation",
-        },
-      }),
+      body: JSON.stringify(paystackPayload),
     });
 
     const paystackData = await paystackRes.json();

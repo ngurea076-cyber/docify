@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Heart, Loader2, CreditCard, Smartphone, Copy, Check } from "lucide-react";
+import { Heart, Loader2, CreditCard, Smartphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -28,28 +28,18 @@ const DonateModal = ({
   onOpenChange,
   documentId,
   creatorUsername,
-  mpesaPaybill,
-  mpesaTill,
 }: DonateModalProps) => {
   const { toast } = useToast();
   const [selectedAmount, setSelectedAmount] = useState<number | null>(500);
   const [customAmount, setCustomAmount] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [processingPayment, setProcessingPayment] = useState(false);
-  const [copiedPayment, setCopiedPayment] = useState<string | null>(null);
-  const [showManualMpesa, setShowManualMpesa] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "mpesa">("card");
 
   const donationAmount = selectedAmount || Number(customAmount);
-  const hasMpesa = Boolean(mpesaPaybill || mpesaTill);
 
-  const handleCopyPayment = (value: string, label: string) => {
-    navigator.clipboard.writeText(value);
-    setCopiedPayment(label);
-    toast({ title: "Copied!", description: `${label} copied to clipboard` });
-    setTimeout(() => setCopiedPayment(null), 2000);
-  };
-
-  const handlePaystackDonate = async (channel?: string) => {
+  const handleDonate = async () => {
     if (!donationAmount || donationAmount < 50) {
       toast({ title: "Invalid amount", description: "Minimum donation is KES 50", variant: "destructive" });
       return;
@@ -58,11 +48,22 @@ const DonateModal = ({
       toast({ title: "Email required", description: "Please enter your email for the receipt", variant: "destructive" });
       return;
     }
+    if (paymentMethod === "mpesa" && !phone) {
+      toast({ title: "Phone required", description: "Please enter your M-Pesa phone number", variant: "destructive" });
+      return;
+    }
 
     setProcessingPayment(true);
     try {
-      const body: Record<string, unknown> = { document_id: documentId, amount: donationAmount, email };
-      if (channel) body.channel = channel;
+      const body: Record<string, unknown> = {
+        document_id: documentId,
+        amount: donationAmount,
+        email,
+      };
+      if (paymentMethod === "mpesa") {
+        body.channel = "mobile_money";
+        body.phone = phone;
+      }
 
       const { data, error } = await supabase.functions.invoke("create-donation", { body });
 
@@ -127,6 +128,31 @@ const DonateModal = ({
             </div>
           </div>
 
+          {/* Payment method toggle */}
+          <div>
+            <p className="text-sm font-medium mb-2">Payment method</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant={paymentMethod === "card" ? "default" : "outline"}
+                size="sm"
+                className="gap-2"
+                onClick={() => setPaymentMethod("card")}
+              >
+                <CreditCard className="h-4 w-4" />
+                Card
+              </Button>
+              <Button
+                variant={paymentMethod === "mpesa" ? "default" : "outline"}
+                size="sm"
+                className="gap-2"
+                onClick={() => setPaymentMethod("mpesa")}
+              >
+                <Smartphone className="h-4 w-4" />
+                M-Pesa
+              </Button>
+            </div>
+          </div>
+
           {/* Email */}
           <div>
             <p className="text-sm font-medium mb-2">Your email</p>
@@ -138,78 +164,42 @@ const DonateModal = ({
             />
           </div>
 
-          {/* Payment buttons */}
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              variant="hero"
-              className="gap-2"
-              onClick={() => handlePaystackDonate()}
-              disabled={processingPayment || !donationAmount || donationAmount < 50 || !email}
-            >
-              {processingPayment ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <CreditCard className="h-4 w-4" />
-              )}
-              Pay with Card
-            </Button>
-            <Button
-              variant="outline"
-              className="gap-2"
-              onClick={() => handlePaystackDonate("mobile_money")}
-              disabled={processingPayment || !donationAmount || donationAmount < 50 || !email}
-            >
-              {processingPayment ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Smartphone className="h-4 w-4" />
-              )}
-              M-Pesa
-            </Button>
-          </div>
+          {/* Phone for M-Pesa */}
+          {paymentMethod === "mpesa" && (
+            <div>
+              <p className="text-sm font-medium mb-2">M-Pesa phone number</p>
+              <Input
+                type="tel"
+                placeholder="e.g. 0712345678"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                You'll receive an STK push on this number to complete payment
+              </p>
+            </div>
+          )}
+
+          {/* Pay button */}
+          <Button
+            variant="hero"
+            className="w-full gap-2"
+            onClick={handleDonate}
+            disabled={processingPayment || !donationAmount || donationAmount < 50 || !email || (paymentMethod === "mpesa" && !phone)}
+          >
+            {processingPayment ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : paymentMethod === "card" ? (
+              <CreditCard className="h-4 w-4" />
+            ) : (
+              <Smartphone className="h-4 w-4" />
+            )}
+            {paymentMethod === "card" ? "Pay with Card" : "Pay via M-Pesa"}
+          </Button>
 
           <p className="text-xs text-muted-foreground text-center">
             Secured by Paystack • KES {(donationAmount || 0).toLocaleString()}
           </p>
-
-          {/* Manual M-Pesa fallback */}
-          {hasMpesa && (
-            <div className="pt-2 border-t border-border">
-              <button
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors w-full text-center"
-                onClick={() => setShowManualMpesa(!showManualMpesa)}
-              >
-                {showManualMpesa ? "Hide" : "Or pay manually via M-Pesa"}
-              </button>
-
-              {showManualMpesa && (
-                <div className="mt-3 space-y-3">
-                  {mpesaPaybill && (
-                    <div className="flex items-center justify-between p-3 bg-muted rounded-lg border border-border">
-                      <div>
-                        <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Paybill</p>
-                        <p className="text-lg font-bold">{mpesaPaybill}</p>
-                      </div>
-                      <Button variant="outline" size="icon" onClick={() => handleCopyPayment(mpesaPaybill, "Paybill")}>
-                        {copiedPayment === "Paybill" ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  )}
-                  {mpesaTill && (
-                    <div className="flex items-center justify-between p-3 bg-muted rounded-lg border border-border">
-                      <div>
-                        <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Till Number</p>
-                        <p className="text-lg font-bold">{mpesaTill}</p>
-                      </div>
-                      <Button variant="outline" size="icon" onClick={() => handleCopyPayment(mpesaTill, "Till")}>
-                        {copiedPayment === "Till" ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </DialogContent>
     </Dialog>
