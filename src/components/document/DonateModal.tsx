@@ -32,10 +32,10 @@ const DonateModal = ({
   const { toast } = useToast();
   const [selectedAmount, setSelectedAmount] = useState<number | null>(500);
   const [customAmount, setCustomAmount] = useState("");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [processingPayment, setProcessingPayment] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "mpesa">("card");
 
   const donationAmount = selectedAmount || Number(customAmount);
 
