@@ -63,11 +63,10 @@ const DonateModal = ({
         document_id: documentId,
         amount: donationAmount,
         email,
+        name: name.trim(),
+        channel: "mobile_money",
+        phone,
       };
-      if (paymentMethod === "mpesa") {
-        body.channel = "mobile_money";
-        body.phone = phone;
-      }
 
       const { data, error } = await supabase.functions.invoke("create-donation", { body });
 
