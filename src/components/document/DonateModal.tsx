@@ -44,11 +44,15 @@ const DonateModal = ({
       toast({ title: "Invalid amount", description: "Minimum donation is KES 50", variant: "destructive" });
       return;
     }
+    if (!name.trim()) {
+      toast({ title: "Name required", description: "Please enter your name", variant: "destructive" });
+      return;
+    }
     if (!email) {
       toast({ title: "Email required", description: "Please enter your email for the receipt", variant: "destructive" });
       return;
     }
-    if (paymentMethod === "mpesa" && !phone) {
+    if (!phone) {
       toast({ title: "Phone required", description: "Please enter your M-Pesa phone number", variant: "destructive" });
       return;
     }
