@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Loader2, CheckCircle, XCircle, Eye, Shield, MessageCircle } from "lucide-react";
 import Header from "@/components/layout/Header";
 import AdminSupportChat from "@/components/chat/AdminSupportChat";
+import PayoutDetailView from "@/components/admin/PayoutDetailView";
 
 const AdminDashboard = () => {
   const { user, loading: authLoading } = useAuth();
