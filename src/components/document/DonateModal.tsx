@@ -172,16 +172,14 @@ const DonateModal = ({
             variant="hero"
             className="w-full gap-2"
             onClick={handleDonate}
-            disabled={processingPayment || !donationAmount || donationAmount < 50 || !email || (paymentMethod === "mpesa" && !phone)}
+            disabled={processingPayment || !donationAmount || donationAmount < 50 || !email || !phone || !name.trim()}
           >
             {processingPayment ? (
               <Loader2 className="h-4 w-4 animate-spin" />
-            ) : paymentMethod === "card" ? (
-              <CreditCard className="h-4 w-4" />
             ) : (
               <Smartphone className="h-4 w-4" />
             )}
-            {paymentMethod === "card" ? "Pay with Card" : "Pay via M-Pesa"}
+            Pay via M-Pesa
           </Button>
 
           <p className="text-xs text-muted-foreground text-center">
