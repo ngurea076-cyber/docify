@@ -99,7 +99,7 @@ const DonateModal = ({
             Support {creatorUsername || "the creator"}
           </DialogTitle>
           <DialogDescription>
-            Send a donation securely via card or M-Pesa
+            Send a donation securely via M-Pesa
           </DialogDescription>
         </DialogHeader>
 
