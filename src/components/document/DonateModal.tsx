@@ -131,29 +131,15 @@ const DonateModal = ({
             </div>
           </div>
 
-          {/* Payment method toggle */}
+          {/* Name */}
           <div>
-            <p className="text-sm font-medium mb-2">Payment method</p>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant={paymentMethod === "card" ? "default" : "outline"}
-                size="sm"
-                className="gap-2"
-                onClick={() => setPaymentMethod("card")}
-              >
-                <CreditCard className="h-4 w-4" />
-                Card
-              </Button>
-              <Button
-                variant={paymentMethod === "mpesa" ? "default" : "outline"}
-                size="sm"
-                className="gap-2"
-                onClick={() => setPaymentMethod("mpesa")}
-              >
-                <Smartphone className="h-4 w-4" />
-                M-Pesa
-              </Button>
-            </div>
+            <p className="text-sm font-medium mb-2">Your name</p>
+            <Input
+              type="text"
+              placeholder="John Doe"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
           </div>
 
           {/* Email */}
@@ -168,20 +154,18 @@ const DonateModal = ({
           </div>
 
           {/* Phone for M-Pesa */}
-          {paymentMethod === "mpesa" && (
-            <div>
-              <p className="text-sm font-medium mb-2">M-Pesa phone number</p>
-              <Input
-                type="tel"
-                placeholder="e.g. 0712345678"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                You'll receive an STK push on this number to complete payment
-              </p>
-            </div>
-          )}
+          <div>
+            <p className="text-sm font-medium mb-2">M-Pesa phone number</p>
+            <Input
+              type="tel"
+              placeholder="e.g. 0712345678"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              You'll receive an STK push on this number to complete payment
+            </p>
+          </div>
 
           {/* Pay button */}
           <Button
