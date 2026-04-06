@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Heart, Loader2, CreditCard, Smartphone } from "lucide-react";
+import { Heart, Loader2, Smartphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -32,10 +32,10 @@ const DonateModal = ({
   const { toast } = useToast();
   const [selectedAmount, setSelectedAmount] = useState<number | null>(500);
   const [customAmount, setCustomAmount] = useState("");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [processingPayment, setProcessingPayment] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "mpesa">("card");
 
   const donationAmount = selectedAmount || Number(customAmount);
 
@@ -44,11 +44,15 @@ const DonateModal = ({
       toast({ title: "Invalid amount", description: "Minimum donation is KES 50", variant: "destructive" });
       return;
     }
+    if (!name.trim()) {
+      toast({ title: "Name required", description: "Please enter your name", variant: "destructive" });
+      return;
+    }
     if (!email) {
       toast({ title: "Email required", description: "Please enter your email for the receipt", variant: "destructive" });
       return;
     }
-    if (paymentMethod === "mpesa" && !phone) {
+    if (!phone) {
       toast({ title: "Phone required", description: "Please enter your M-Pesa phone number", variant: "destructive" });
       return;
     }
@@ -59,11 +63,10 @@ const DonateModal = ({
         document_id: documentId,
         amount: donationAmount,
         email,
+        name: name.trim(),
+        channel: "mobile_money",
+        phone,
       };
-      if (paymentMethod === "mpesa") {
-        body.channel = "mobile_money";
-        body.phone = phone;
-      }
 
       const { data, error } = await supabase.functions.invoke("create-donation", { body });
 
@@ -96,7 +99,7 @@ const DonateModal = ({
             Support {creatorUsername || "the creator"}
           </DialogTitle>
           <DialogDescription>
-            Send a donation securely via card or M-Pesa
+            Send a donation securely via M-Pesa
           </DialogDescription>
         </DialogHeader>
 
@@ -128,29 +131,15 @@ const DonateModal = ({
             </div>
           </div>
 
-          {/* Payment method toggle */}
+          {/* Name */}
           <div>
-            <p className="text-sm font-medium mb-2">Payment method</p>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant={paymentMethod === "card" ? "default" : "outline"}
-                size="sm"
-                className="gap-2"
-                onClick={() => setPaymentMethod("card")}
-              >
-                <CreditCard className="h-4 w-4" />
-                Card
-              </Button>
-              <Button
-                variant={paymentMethod === "mpesa" ? "default" : "outline"}
-                size="sm"
-                className="gap-2"
-                onClick={() => setPaymentMethod("mpesa")}
-              >
-                <Smartphone className="h-4 w-4" />
-                M-Pesa
-              </Button>
-            </div>
+            <p className="text-sm font-medium mb-2">Your name</p>
+            <Input
+              type="text"
+              placeholder="John Doe"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
           </div>
 
           {/* Email */}
@@ -165,36 +154,32 @@ const DonateModal = ({
           </div>
 
           {/* Phone for M-Pesa */}
-          {paymentMethod === "mpesa" && (
-            <div>
-              <p className="text-sm font-medium mb-2">M-Pesa phone number</p>
-              <Input
-                type="tel"
-                placeholder="e.g. 0712345678"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                You'll receive an STK push on this number to complete payment
-              </p>
-            </div>
-          )}
+          <div>
+            <p className="text-sm font-medium mb-2">M-Pesa phone number</p>
+            <Input
+              type="tel"
+              placeholder="e.g. 0712345678"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              You'll receive an STK push on this number to complete payment
+            </p>
+          </div>
 
           {/* Pay button */}
           <Button
             variant="hero"
             className="w-full gap-2"
             onClick={handleDonate}
-            disabled={processingPayment || !donationAmount || donationAmount < 50 || !email || (paymentMethod === "mpesa" && !phone)}
+            disabled={processingPayment || !donationAmount || donationAmount < 50 || !email || !phone || !name.trim()}
           >
             {processingPayment ? (
               <Loader2 className="h-4 w-4 animate-spin" />
-            ) : paymentMethod === "card" ? (
-              <CreditCard className="h-4 w-4" />
             ) : (
               <Smartphone className="h-4 w-4" />
             )}
-            {paymentMethod === "card" ? "Pay with Card" : "Pay via M-Pesa"}
+            Pay via M-Pesa
           </Button>
 
           <p className="text-xs text-muted-foreground text-center">
