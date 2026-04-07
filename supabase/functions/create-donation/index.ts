@@ -1,4 +1,8 @@
-const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 Deno.serve(async (req) => {
@@ -87,30 +91,73 @@ Deno.serve(async (req) => {
     }
 
     // Initialize Paystack transaction
-    const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${paystackSecretKey}`,
-        "Content-Type": "application/json",
+    const paystackRes = await fetch(
+      "https://api.paystack.co/transaction/initialize",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${paystackSecretKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(paystackPayload),
       },
-      body: JSON.stringify(paystackPayload),
-    });
+    );
 
     const paystackData = await paystackRes.json();
     if (!paystackRes.ok || !paystackData.status) {
       console.error("Paystack initialization failed:", paystackData);
-      throw new Error(`Payment initialization failed: ${paystackData.message || "Unknown error"}`);
+      throw new Error(
+        `Payment initialization failed: ${paystackData.message || "Unknown error"}`,
+      );
     }
 
-    return new Response(JSON.stringify({
-      success: true,
-      authorization_url: paystackData.data.authorization_url,
-      reference: paystackData.data.reference,
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    // Insert a pending purchase record so the client (and webhook) can track it
+    try {
+      const reference = paystackData.data.reference as string;
+      const platformFee = Math.round(amountInKobo * 0.05);
+      const creatorEarning = amountInKobo - platformFee;
+
+      const { error: insertError } = await supabase.from("purchases").insert({
+        document_id: doc.id,
+        buyer_email: email,
+        amount: amountInKobo,
+        currency: "KES",
+        paystack_reference: reference,
+        platform_fee: platformFee,
+        creator_earning: creatorEarning,
+        status: "pending",
+      });
+
+      if (insertError) {
+        console.error("Failed to insert pending purchase:", insertError);
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          authorization_url: paystackData.data.authorization_url,
+          reference,
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    } catch (err) {
+      console.error("Error inserting purchase record", err);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          authorization_url: paystackData.data.authorization_url,
+          reference: paystackData.data.reference,
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: errorMessage }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

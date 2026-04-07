@@ -4,18 +4,46 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Loader2, Wallet, TrendingUp, Clock, ArrowDownToLine, DollarSign } from "lucide-react";
+import {
+  ArrowLeft,
+  Loader2,
+  Wallet,
+  TrendingUp,
+  Clock,
+  ArrowDownToLine,
+  DollarSign,
+} from "lucide-react";
 import Header from "@/components/layout/Header";
 
 const MIN_WITHDRAWAL = 500; // KES
 
 const Earnings = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -35,14 +63,74 @@ const Earnings = () => {
     if (user) fetchData();
   }, [user]);
 
+  // Refresh balances and withdrawals when the user returns to the tab
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible" && user) {
+        fetchData();
+      }
+    };
+
+    window.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", handleVisibility);
+    return () => {
+      window.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", handleVisibility);
+    };
+  }, [user]);
+
+  // Refresh when a donation completes
+  useEffect(() => {
+    const handler = (e: Event) => {
+      fetchData();
+    };
+    window.addEventListener("donation:completed", handler as EventListener);
+    return () =>
+      window.removeEventListener(
+        "donation:completed",
+        handler as EventListener,
+      );
+  }, [user]);
+
   const fetchData = async () => {
-    const [balanceRes, withdrawalsRes, payoutRes] = await Promise.all([
-      supabase.from("creator_balances").select("*").eq("user_id", user?.id).maybeSingle(),
-      supabase.from("withdrawals").select("*").eq("user_id", user?.id).order("created_at", { ascending: false }),
-      supabase.from("creator_payouts").select("status").eq("user_id", user?.id).maybeSingle(),
+    const ledgerUrl = import.meta.env.VITE_LEDGER_API_URL;
+    if (ledgerUrl && session?.access_token) {
+      try {
+        const res = await fetch(
+          `${ledgerUrl.replace(/\/$/, "")}/api/ledger/balance`,
+          { headers: { Authorization: `Bearer ${session.access_token}` } },
+        );
+        if (res.ok) {
+          const json = await res.json();
+          setBalance(json);
+        }
+      } catch (err) {
+        console.error("Ledger balance fetch failed", err);
+      }
+    } else {
+      const [balanceRes] = await Promise.all([
+        supabase
+          .from("creator_balances")
+          .select("*")
+          .eq("user_id", user?.id)
+          .maybeSingle(),
+      ]);
+      setBalance(balanceRes.data);
+    }
+
+    const [withdrawalsRes, payoutRes] = await Promise.all([
+      supabase
+        .from("withdrawals")
+        .select("*")
+        .eq("user_id", user?.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("creator_payouts")
+        .select("status")
+        .eq("user_id", user?.id)
+        .maybeSingle(),
     ]);
 
-    setBalance(balanceRes.data);
     setWithdrawals(withdrawalsRes.data || []);
     setPayoutStatus(payoutRes.data?.status || null);
     setLoading(false);
@@ -51,11 +139,19 @@ const Earnings = () => {
   const handleWithdraw = async () => {
     const amount = parseInt(withdrawAmount);
     if (isNaN(amount) || amount < MIN_WITHDRAWAL) {
-      toast({ title: "Error", description: `Minimum withdrawal is KES ${MIN_WITHDRAWAL}`, variant: "destructive" });
+      toast({
+        title: "Error",
+        description: `Minimum withdrawal is KES ${MIN_WITHDRAWAL}`,
+        variant: "destructive",
+      });
       return;
     }
     if (amount > (balance?.available_balance || 0)) {
-      toast({ title: "Error", description: "Insufficient balance", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Insufficient balance",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -69,10 +165,13 @@ const Earnings = () => {
       if (error) throw error;
 
       // Deduct from available balance
-      const { error: balanceError } = await supabase.from("creator_balances").update({
-        available_balance: (balance?.available_balance || 0) - amount,
-        updated_at: new Date().toISOString(),
-      }).eq("user_id", user!.id);
+      const { error: balanceError } = await supabase
+        .from("creator_balances")
+        .update({
+          available_balance: (balance?.available_balance || 0) - amount,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", user!.id);
       if (balanceError) throw balanceError;
 
       toast({ title: "Success", description: "Withdrawal request submitted" });
@@ -80,14 +179,21 @@ const Earnings = () => {
       setWithdrawAmount("");
       fetchData();
     } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     } finally {
       setWithdrawing(false);
     }
   };
 
   const statusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+    const variants: Record<
+      string,
+      "default" | "secondary" | "destructive" | "outline"
+    > = {
       pending: "secondary",
       processing: "outline",
       completed: "default",
@@ -104,13 +210,19 @@ const Earnings = () => {
     );
   }
 
-  const canWithdraw = payoutStatus === "approved" && (balance?.available_balance || 0) >= MIN_WITHDRAWAL;
+  const canWithdraw =
+    payoutStatus === "approved" &&
+    (balance?.available_balance || 0) >= MIN_WITHDRAWAL;
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container mx-auto px-4 pt-24 pb-12">
-        <Button variant="ghost" onClick={() => navigate("/dashboard")} className="mb-6">
+        <Button
+          variant="ghost"
+          onClick={() => navigate("/dashboard")}
+          className="mb-6"
+        >
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
         </Button>
 
@@ -118,9 +230,14 @@ const Earnings = () => {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-3xl font-bold text-foreground">Earnings</h1>
-              <p className="text-muted-foreground">Track your earnings and manage withdrawals</p>
+              <p className="text-muted-foreground">
+                Track your earnings and manage withdrawals
+              </p>
             </div>
-            <Button onClick={() => setWithdrawModalOpen(true)} disabled={!canWithdraw}>
+            <Button
+              onClick={() => setWithdrawModalOpen(true)}
+              disabled={!canWithdraw}
+            >
               <ArrowDownToLine className="h-4 w-4 mr-2" /> Withdraw Funds
             </Button>
           </div>
@@ -131,7 +248,11 @@ const Earnings = () => {
                 <Clock className="h-5 w-5 text-yellow-600" />
                 <div className="flex-1">
                   <p className="font-medium">
-                    {!payoutStatus ? "Payout account not connected" : payoutStatus === "pending" ? "Verification pending" : "Payout account rejected"}
+                    {!payoutStatus
+                      ? "Payout account not connected"
+                      : payoutStatus === "pending"
+                        ? "Verification pending"
+                        : "Payout account rejected"}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {!payoutStatus
@@ -140,7 +261,12 @@ const Earnings = () => {
                   </p>
                 </div>
                 {!payoutStatus && (
-                  <Button variant="outline" onClick={() => navigate("/payout-settings")}>Connect</Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate("/payout-settings")}
+                  >
+                    Connect
+                  </Button>
                 )}
               </CardContent>
             </Card>
@@ -154,7 +280,9 @@ const Earnings = () => {
                   <DollarSign className="h-4 w-4" />
                   <span className="text-sm">Total Earnings</span>
                 </div>
-                <p className="text-2xl font-bold">KES {((balance?.total_earnings || 0) / 100).toLocaleString()}</p>
+                <p className="text-2xl font-bold">
+                  KES {((balance?.total_earnings || 0) / 100).toLocaleString()}
+                </p>
               </CardContent>
             </Card>
             <Card>
@@ -163,7 +291,10 @@ const Earnings = () => {
                   <Wallet className="h-4 w-4" />
                   <span className="text-sm">Available Balance</span>
                 </div>
-                <p className="text-2xl font-bold text-green-600">KES {((balance?.available_balance || 0) / 100).toLocaleString()}</p>
+                <p className="text-2xl font-bold text-green-600">
+                  KES{" "}
+                  {((balance?.available_balance || 0) / 100).toLocaleString()}
+                </p>
               </CardContent>
             </Card>
             <Card>
@@ -172,7 +303,10 @@ const Earnings = () => {
                   <Clock className="h-4 w-4" />
                   <span className="text-sm">Pending Earnings</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-600">KES {((balance?.pending_earnings || 0) / 100).toLocaleString()}</p>
+                <p className="text-2xl font-bold text-yellow-600">
+                  KES{" "}
+                  {((balance?.pending_earnings || 0) / 100).toLocaleString()}
+                </p>
               </CardContent>
             </Card>
             <Card>
@@ -181,7 +315,9 @@ const Earnings = () => {
                   <TrendingUp className="h-4 w-4" />
                   <span className="text-sm">Total Withdrawn</span>
                 </div>
-                <p className="text-2xl font-bold">KES {((balance?.total_withdrawn || 0) / 100).toLocaleString()}</p>
+                <p className="text-2xl font-bold">
+                  KES {((balance?.total_withdrawn || 0) / 100).toLocaleString()}
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -190,11 +326,15 @@ const Earnings = () => {
           <Card>
             <CardHeader>
               <CardTitle>Withdrawal History</CardTitle>
-              <CardDescription>Your past and pending withdrawal requests</CardDescription>
+              <CardDescription>
+                Your past and pending withdrawal requests
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {withdrawals.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">No withdrawal requests yet</p>
+                <p className="text-center text-muted-foreground py-8">
+                  No withdrawal requests yet
+                </p>
               ) : (
                 <Table>
                   <TableHeader>
@@ -206,12 +346,18 @@ const Earnings = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {withdrawals.map(w => (
+                    {withdrawals.map((w) => (
                       <TableRow key={w.id}>
-                        <TableCell>{new Date(w.created_at).toLocaleDateString()}</TableCell>
-                        <TableCell>KES {(w.amount / 100).toLocaleString()}</TableCell>
+                        <TableCell>
+                          {new Date(w.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          KES {(w.amount / 100).toLocaleString()}
+                        </TableCell>
                         <TableCell>{statusBadge(w.status)}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{w.admin_note || "-"}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {w.admin_note || "-"}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -227,7 +373,9 @@ const Earnings = () => {
             <DialogHeader>
               <DialogTitle>Withdraw Funds</DialogTitle>
               <DialogDescription>
-                Available: KES {((balance?.available_balance || 0) / 100).toLocaleString()} · Min: KES {(MIN_WITHDRAWAL / 100).toLocaleString()}
+                Available: KES{" "}
+                {((balance?.available_balance || 0) / 100).toLocaleString()} ·
+                Min: KES {(MIN_WITHDRAWAL / 100).toLocaleString()}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -236,7 +384,7 @@ const Earnings = () => {
                   type="number"
                   placeholder="Amount in KES (smallest unit)"
                   value={withdrawAmount}
-                  onChange={e => setWithdrawAmount(e.target.value)}
+                  onChange={(e) => setWithdrawAmount(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
                   Enter amount in cents (e.g., 50000 = KES 500)
@@ -244,9 +392,21 @@ const Earnings = () => {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setWithdrawModalOpen(false)}>Cancel</Button>
+              <Button
+                variant="outline"
+                onClick={() => setWithdrawModalOpen(false)}
+              >
+                Cancel
+              </Button>
               <Button onClick={handleWithdraw} disabled={withdrawing}>
-                {withdrawing ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Processing...</> : "Confirm Withdrawal"}
+                {withdrawing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />{" "}
+                    Processing...
+                  </>
+                ) : (
+                  "Confirm Withdrawal"
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>

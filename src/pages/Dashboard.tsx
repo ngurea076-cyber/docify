@@ -4,7 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   FileText,
@@ -52,7 +58,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import UploadPDFModal, { DocumentData } from "@/components/upload/UploadPDFModal";
+import UploadPDFModal, {
+  DocumentData,
+} from "@/components/upload/UploadPDFModal";
 import QRCodeModal from "@/components/document/QRCodeModal";
 import SupportChat from "@/components/chat/SupportChat";
 
@@ -67,7 +75,13 @@ interface Document {
   allow_downloads: boolean;
   allow_donations: boolean;
   allow_comments: boolean;
-  document_type: "menu" | "brochure" | "pricelist" | "event" | "notice" | "other";
+  document_type:
+    | "menu"
+    | "brochure"
+    | "pricelist"
+    | "event"
+    | "notice"
+    | "other";
   country: string | null;
   city: string | null;
   area: string | null;
@@ -95,20 +109,28 @@ const Dashboard = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
-  
+
   // QR Code modal state
   const [qrModalOpen, setQrModalOpen] = useState(false);
-  const [selectedDocForQR, setSelectedDocForQR] = useState<{ id: string; title: string } | null>(null);
-  
+  const [selectedDocForQR, setSelectedDocForQR] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
+
   // Edit modal state
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editingDocument, setEditingDocument] = useState<DocumentData | null>(null);
-  
+  const [editingDocument, setEditingDocument] = useState<DocumentData | null>(
+    null,
+  );
+
   // Delete confirmation state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deletingDocument, setDeletingDocument] = useState<{ id: string; title: string } | null>(null);
+  const [deletingDocument, setDeletingDocument] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  
+
   // Profile form states
   const [username, setUsername] = useState("");
   const [paybill, setPaybill] = useState("");
@@ -116,7 +138,7 @@ const Dashboard = () => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [bio, setBio] = useState("");
-  const { user, loading, signOut } = useAuth();
+  const { user, session, loading, signOut } = useAuth();
   const { isAdmin } = useAdminRole();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -134,13 +156,46 @@ const Dashboard = () => {
     }
   }, [user]);
 
+  // Refresh payment data and documents when the user returns to the tab
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible" && user) {
+        fetchDocuments();
+        fetchPaymentData();
+      }
+    };
+
+    window.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", handleVisibility);
+    return () => {
+      window.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", handleVisibility);
+    };
+  }, [user]);
+
+  // Refresh when a donation completes (dispatched from DonateModal)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      fetchDocuments();
+      fetchPaymentData();
+    };
+    window.addEventListener("donation:completed", handler as EventListener);
+    return () =>
+      window.removeEventListener(
+        "donation:completed",
+        handler as EventListener,
+      );
+  }, [user]);
+
   const fetchDocuments = async () => {
     const { data } = await supabase
       .from("documents")
-      .select("id, title, description, view_count, download_count, is_public, created_at, allow_downloads, allow_donations, allow_comments, document_type, country, city, area, google_maps_url, file_name, file_size, file_url, order_url, thumbnail_url")
+      .select(
+        "id, title, description, view_count, download_count, is_public, created_at, allow_downloads, allow_donations, allow_comments, document_type, country, city, area, google_maps_url, file_name, file_size, file_url, order_url, thumbnail_url",
+      )
       .eq("user_id", user?.id)
       .order("created_at", { ascending: false });
-    
+
     if (data) {
       setDocuments(data);
     }
@@ -173,19 +228,17 @@ const Dashboard = () => {
 
   const handleSaveProfile = async () => {
     if (!user) return;
-    
+
     setSavingProfile(true);
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .upsert({
-          id: user.id,
-          username: username.trim() || null,
-          mpesa_paybill: paybill.trim() || null,
-          mpesa_till: tillNumber.trim() || null,
-          avatar_url: avatarUrl,
-          bio: bio.trim() || null,
-        });
+      const { error } = await supabase.from("profiles").upsert({
+        id: user.id,
+        username: username.trim() || null,
+        mpesa_paybill: paybill.trim() || null,
+        mpesa_till: tillNumber.trim() || null,
+        avatar_url: avatarUrl,
+        bio: bio.trim() || null,
+      });
 
       if (error) throw error;
 
@@ -193,7 +246,7 @@ const Dashboard = () => {
         title: "Success",
         description: "Profile updated successfully",
       });
-      
+
       fetchProfile();
     } catch (error: any) {
       toast({
@@ -208,10 +261,10 @@ const Dashboard = () => {
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0] || !user) return;
-    
+
     const file = e.target.files[0];
     const maxSize = 2 * 1024 * 1024; // 2MB
-    
+
     if (!file.type.startsWith("image/")) {
       toast({
         title: "Invalid file type",
@@ -220,7 +273,7 @@ const Dashboard = () => {
       });
       return;
     }
-    
+
     if (file.size > maxSize) {
       toast({
         title: "File too large",
@@ -232,9 +285,9 @@ const Dashboard = () => {
 
     setUploadingAvatar(true);
     try {
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split(".").pop();
       const fileName = `${user.id}/avatar.${fileExt}`;
-      
+
       // Upload to storage
       const { error: uploadError } = await supabase.storage
         .from("pdfs")
@@ -243,19 +296,17 @@ const Dashboard = () => {
       if (uploadError) throw uploadError;
 
       // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from("pdfs")
-        .getPublicUrl(fileName);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("pdfs").getPublicUrl(fileName);
 
       setAvatarUrl(publicUrl);
-      
+
       // Update profile with new avatar URL
-      await supabase
-        .from("profiles")
-        .upsert({
-          id: user.id,
-          avatar_url: publicUrl,
-        });
+      await supabase.from("profiles").upsert({
+        id: user.id,
+        avatar_url: publicUrl,
+      });
 
       toast({
         title: "Avatar updated",
@@ -316,7 +367,7 @@ const Dashboard = () => {
 
   const handleDeleteDocument = async () => {
     if (!deletingDocument) return;
-    
+
     setIsDeleting(true);
     try {
       const { error } = await supabase
@@ -330,7 +381,7 @@ const Dashboard = () => {
         title: "Document deleted",
         description: `"${deletingDocument.title}" has been removed`,
       });
-      
+
       fetchDocuments();
     } catch (error: any) {
       toast({
@@ -347,6 +398,9 @@ const Dashboard = () => {
 
   const [creatorBalance, setCreatorBalance] = useState<any>(null);
   const [payoutStatus, setPayoutStatus] = useState<string | null>(null);
+  const [paystackSubaccount, setPaystackSubaccount] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     if (user) {
@@ -355,22 +409,54 @@ const Dashboard = () => {
   }, [user]);
 
   const fetchPaymentData = async () => {
-    const [balanceRes, payoutRes] = await Promise.all([
-      supabase.from("creator_balances").select("*").eq("user_id", user?.id).maybeSingle(),
-      supabase.from("creator_payouts").select("status").eq("user_id", user?.id).maybeSingle(),
+    const ledgerUrl = import.meta.env.VITE_LEDGER_API_URL;
+    if (ledgerUrl && session?.access_token) {
+      try {
+        const res = await fetch(
+          `${ledgerUrl.replace(/\/$/, "")}/api/ledger/balance`,
+          {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          },
+        );
+        if (res.ok) {
+          const json = await res.json();
+          setCreatorBalance(json);
+        }
+      } catch (err) {
+        console.error("Ledger balance fetch failed", err);
+      }
+    }
+
+    const [payoutRes] = await Promise.all([
+      supabase
+        .from("creator_payouts")
+        .select("status, paystack_subaccount_code")
+        .eq("user_id", user?.id)
+        .maybeSingle(),
     ]);
-    setCreatorBalance(balanceRes.data);
     setPayoutStatus(payoutRes.data?.status || null);
+    setPaystackSubaccount(payoutRes.data?.paystack_subaccount_code || null);
   };
 
   const totalViews = documents.reduce((sum, d) => sum + d.view_count, 0);
-  const totalDownloads = documents.reduce((sum, d) => sum + d.download_count, 0);
+  const totalDownloads = documents.reduce(
+    (sum, d) => sum + d.download_count,
+    0,
+  );
 
   const stats = [
     { label: "Total Views", value: totalViews.toLocaleString(), icon: Eye },
-    { label: "Downloads", value: totalDownloads.toLocaleString(), icon: Download },
+    {
+      label: "Downloads",
+      value: totalDownloads.toLocaleString(),
+      icon: Download,
+    },
     { label: "Documents", value: documents.length.toString(), icon: FileText },
-    { label: "Available Balance", value: `KES ${((creatorBalance?.available_balance || 0) / 100).toLocaleString()}`, icon: CreditCard },
+    {
+      label: "Available Balance",
+      value: `KES ${((creatorBalance?.available_balance || 0) / 100).toLocaleString()}`,
+      icon: CreditCard,
+    },
   ];
 
   if (loading) {
@@ -386,10 +472,15 @@ const Dashboard = () => {
   }
 
   const userInitials = user.user_metadata?.full_name
-    ? user.user_metadata.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase()
+    ? user.user_metadata.full_name
+        .split(" ")
+        .map((n: string) => n[0])
+        .join("")
+        .toUpperCase()
     : user.email?.substring(0, 2).toUpperCase() || "U";
 
-  const userName = user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
+  const userName =
+    user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
 
   return (
     <div className="min-h-screen bg-background">
@@ -408,57 +499,57 @@ const Dashboard = () => {
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1">
-            <NavButton 
-              icon={BarChart3} 
-              label="Dashboard" 
-              active={activeSection === "dashboard"} 
+            <NavButton
+              icon={BarChart3}
+              label="Dashboard"
+              active={activeSection === "dashboard"}
               onClick={() => setActiveSection("dashboard")}
             />
-            <NavButton 
-              icon={FileText} 
-              label="Documents" 
-              active={activeSection === "documents"} 
+            <NavButton
+              icon={FileText}
+              label="Documents"
+              active={activeSection === "documents"}
               onClick={() => setActiveSection("documents")}
             />
-            <NavButton 
+            <NavButton
               icon={CreditCard}
-              label="Earnings" 
-              active={false} 
+              label="Earnings"
+              active={false}
               onClick={() => navigate("/earnings")}
             />
-            <NavButton 
+            <NavButton
               icon={Settings}
-              label="Payout Settings" 
-              active={false} 
+              label="Payout Settings"
+              active={false}
               onClick={() => navigate("/payout-settings")}
             />
-            <NavButton 
-              icon={User} 
-              label="Profile" 
-              active={activeSection === "profile"} 
+            <NavButton
+              icon={User}
+              label="Profile"
+              active={activeSection === "profile"}
               onClick={() => setActiveSection("profile")}
             />
             {profile?.username && (
-              <NavButton 
-                icon={ExternalLink} 
-                label="Public Profile" 
-                active={false} 
+              <NavButton
+                icon={ExternalLink}
+                label="Public Profile"
+                active={false}
                 onClick={() => navigate(`/u/${profile.username}`)}
               />
             )}
             <div className="pt-4 mt-4 border-t border-border space-y-1">
               {isAdmin && (
-                <NavButton 
-                  icon={Shield} 
-                  label="Admin Dashboard" 
-                  active={false} 
+                <NavButton
+                  icon={Shield}
+                  label="Admin Dashboard"
+                  active={false}
                   onClick={() => navigate("/admin")}
                 />
               )}
-              <NavButton 
-                icon={LogOut} 
-                label="Sign Out" 
-                active={false} 
+              <NavButton
+                icon={LogOut}
+                label="Sign Out"
+                active={false}
                 onClick={handleSignOut}
               />
             </div>
@@ -470,11 +561,15 @@ const Dashboard = () => {
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-muted transition-colors">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-sm font-semibold text-primary">{userInitials}</span>
+                    <span className="text-sm font-semibold text-primary">
+                      {userInitials}
+                    </span>
                   </div>
                   <div className="flex-1 min-w-0 text-left">
                     <p className="text-sm font-medium truncate">{userName}</p>
-                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {user.email}
+                    </p>
                   </div>
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 </button>
@@ -489,7 +584,10 @@ const Dashboard = () => {
                   Settings
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                <DropdownMenuItem
+                  onClick={handleSignOut}
+                  className="text-destructive"
+                >
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign out
                 </DropdownMenuItem>
@@ -512,11 +610,18 @@ const Dashboard = () => {
                   </div>
                 </Link>
               </div>
-              <h1 className="text-xl font-semibold capitalize">{activeSection}</h1>
+              <h1 className="text-xl font-semibold capitalize">
+                {activeSection}
+              </h1>
             </div>
             <div className="flex items-center gap-2">
               {isAdmin && (
-                <Button variant="ghost" size="sm" className="gap-2 lg:hidden" onClick={() => navigate("/admin")}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-2 lg:hidden"
+                  onClick={() => navigate("/admin")}
+                >
                   <Shield className="h-4 w-4" />
                   <span className="hidden sm:inline">Admin</span>
                 </Button>
@@ -525,15 +630,20 @@ const Dashboard = () => {
                 <Bell className="h-5 w-5" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full" />
               </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setActiveSection("profile")}
                 className={activeSection === "profile" ? "bg-muted" : ""}
               >
                 <User className="h-5 w-5" />
               </Button>
-              <Button variant="hero" size="sm" className="gap-2" onClick={() => setUploadModalOpen(true)}>
+              <Button
+                variant="hero"
+                size="sm"
+                className="gap-2"
+                onClick={() => setUploadModalOpen(true)}
+              >
                 <Upload className="h-4 w-4" />
                 Upload PDF
               </Button>
@@ -546,8 +656,12 @@ const Dashboard = () => {
             <>
               {/* Welcome */}
               <div className="mb-8">
-                <h2 className="text-2xl font-bold mb-1">Welcome back, {userName.split(" ")[0]}!</h2>
-                <p className="text-muted-foreground">Here's what's happening with your documents.</p>
+                <h2 className="text-2xl font-bold mb-1">
+                  Welcome back, {userName.split(" ")[0]}!
+                </h2>
+                <p className="text-muted-foreground">
+                  Here's what's happening with your documents.
+                </p>
               </div>
 
               {/* Stats Grid */}
@@ -558,7 +672,9 @@ const Dashboard = () => {
                     className="bg-card rounded-xl border border-border p-5 shadow-sm"
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm text-muted-foreground">{stat.label}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {stat.label}
+                      </span>
                       <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
                         <stat.icon className="h-4 w-4 text-accent" />
                       </div>
@@ -572,7 +688,10 @@ const Dashboard = () => {
 
               {/* Payment Quick Actions */}
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/earnings")}>
+                <Card
+                  className="cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => navigate("/earnings")}
+                >
                   <CardContent className="p-5">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
@@ -581,14 +700,20 @@ const Dashboard = () => {
                       <div>
                         <p className="font-semibold">Earnings & Withdrawals</p>
                         <p className="text-sm text-muted-foreground">
-                          Total: KES {((creatorBalance?.total_earnings || 0) / 100).toLocaleString()}
+                          Total: KES{" "}
+                          {(
+                            (creatorBalance?.total_earnings || 0) / 100
+                          ).toLocaleString()}
                         </p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/payout-settings")}>
+                <Card
+                  className="cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => navigate("/payout-settings")}
+                >
                   <CardContent className="p-5">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
@@ -597,7 +722,13 @@ const Dashboard = () => {
                       <div>
                         <p className="font-semibold">Payout Settings</p>
                         <p className="text-sm text-muted-foreground">
-                          {!payoutStatus ? "Not connected" : payoutStatus === "approved" ? "Approved" : payoutStatus === "pending" ? "Pending verification" : "Rejected"}
+                          {!payoutStatus
+                            ? "Not connected"
+                            : payoutStatus === "approved"
+                              ? "Approved"
+                              : payoutStatus === "pending"
+                                ? "Pending verification"
+                                : "Rejected"}
                         </p>
                       </div>
                     </div>
@@ -605,7 +736,10 @@ const Dashboard = () => {
                 </Card>
 
                 {profile?.username && (
-                  <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/u/${profile.username}`)}>
+                  <Card
+                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => navigate(`/u/${profile.username}`)}
+                  >
                     <CardContent className="p-5">
                       <div className="flex items-center gap-3 mb-2">
                         <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
@@ -613,7 +747,9 @@ const Dashboard = () => {
                         </div>
                         <div>
                           <p className="font-semibold">Public Profile</p>
-                          <p className="text-sm text-muted-foreground">View your public page</p>
+                          <p className="text-sm text-muted-foreground">
+                            View your public page
+                          </p>
                         </div>
                       </div>
                     </CardContent>
@@ -635,7 +771,12 @@ const Dashboard = () => {
                         className="pl-9 w-full sm:w-64"
                       />
                     </div>
-                    <Button variant="hero" size="sm" className="gap-2 shrink-0" onClick={() => setUploadModalOpen(true)}>
+                    <Button
+                      variant="hero"
+                      size="sm"
+                      className="gap-2 shrink-0"
+                      onClick={() => setUploadModalOpen(true)}
+                    >
                       <Plus className="h-4 w-4" />
                       Upload
                     </Button>
@@ -664,11 +805,16 @@ const Dashboard = () => {
                     <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
                       <FileText className="h-8 w-8 text-muted-foreground" />
                     </div>
-                    <h3 className="text-lg font-semibold mb-2">No documents yet</h3>
+                    <h3 className="text-lg font-semibold mb-2">
+                      No documents yet
+                    </h3>
                     <p className="text-muted-foreground mb-4">
                       Upload your first PDF to get started
                     </p>
-                    <Button variant="hero" onClick={() => setUploadModalOpen(true)}>
+                    <Button
+                      variant="hero"
+                      onClick={() => setUploadModalOpen(true)}
+                    >
                       <Upload className="h-4 w-4 mr-2" />
                       Upload PDF
                     </Button>
@@ -692,7 +838,12 @@ const Dashboard = () => {
                       className="pl-9 w-full sm:w-64"
                     />
                   </div>
-                  <Button variant="hero" size="sm" className="gap-2 shrink-0" onClick={() => setUploadModalOpen(true)}>
+                  <Button
+                    variant="hero"
+                    size="sm"
+                    className="gap-2 shrink-0"
+                    onClick={() => setUploadModalOpen(true)}
+                  >
                     <Plus className="h-4 w-4" />
                     Upload
                   </Button>
@@ -720,11 +871,16 @@ const Dashboard = () => {
                   <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <FileText className="h-8 w-8 text-muted-foreground" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">No documents yet</h3>
+                  <h3 className="text-lg font-semibold mb-2">
+                    No documents yet
+                  </h3>
                   <p className="text-muted-foreground mb-4">
                     Upload your first PDF to get started
                   </p>
-                  <Button variant="hero" onClick={() => setUploadModalOpen(true)}>
+                  <Button
+                    variant="hero"
+                    onClick={() => setUploadModalOpen(true)}
+                  >
                     <Upload className="h-4 w-4 mr-2" />
                     Upload PDF
                   </Button>
@@ -740,9 +896,13 @@ const Dashboard = () => {
               </div>
               <h3 className="text-lg font-semibold mb-2">Donations</h3>
               <p className="text-muted-foreground mb-4">
-                Track donations from your documents here. Set up your M-Pesa details in your profile to start receiving donations.
+                Track donations from your documents here. Set up your M-Pesa
+                details in your profile to start receiving donations.
               </p>
-              <Button variant="outline" onClick={() => setActiveSection("profile")}>
+              <Button
+                variant="outline"
+                onClick={() => setActiveSection("profile")}
+              >
                 <CreditCard className="h-4 w-4 mr-2" />
                 Set Up Payment
               </Button>
@@ -752,166 +912,189 @@ const Dashboard = () => {
           {activeSection === "profile" && (
             <div className="max-w-2xl">
               <Card>
-                    <CardHeader>
-                      <CardTitle>Profile Information</CardTitle>
-                      <CardDescription>
-                        Update your profile details visible to others
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      {/* Avatar Upload */}
-                      <div className="flex items-center gap-6">
-                        <div className="relative group">
-                          {avatarUrl ? (
-                            <img
-                              src={avatarUrl}
-                              alt="Profile"
-                              className="w-20 h-20 rounded-xl object-cover"
-                            />
-                          ) : (
-                            <div className="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center">
-                              <span className="text-2xl font-bold text-primary">
-                                {username ? username.slice(0, 2).toUpperCase() : "?"}
-                              </span>
-                            </div>
-                          )}
-                          <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                            {uploadingAvatar ? (
-                              <Loader2 className="h-6 w-6 text-white animate-spin" />
-                            ) : (
-                              <Camera className="h-6 w-6 text-white" />
-                            )}
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={handleAvatarUpload}
-                              className="hidden"
-                              disabled={uploadingAvatar}
-                            />
-                          </label>
+                <CardHeader>
+                  <CardTitle>Profile Information</CardTitle>
+                  <CardDescription>
+                    Update your profile details visible to others
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Avatar Upload */}
+                  <div className="flex items-center gap-6">
+                    <div className="relative group">
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt="Profile"
+                          className="w-20 h-20 rounded-xl object-cover"
+                        />
+                      ) : (
+                        <div className="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center">
+                          <span className="text-2xl font-bold text-primary">
+                            {username
+                              ? username.slice(0, 2).toUpperCase()
+                              : "?"}
+                          </span>
                         </div>
-                        <div>
-                          <p className="font-medium">Profile Picture</p>
-                          <p className="text-sm text-muted-foreground">
-                            Click to upload (max 2MB)
+                      )}
+                      <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                        {uploadingAvatar ? (
+                          <Loader2 className="h-6 w-6 text-white animate-spin" />
+                        ) : (
+                          <Camera className="h-6 w-6 text-white" />
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleAvatarUpload}
+                          className="hidden"
+                          disabled={uploadingAvatar}
+                        />
+                      </label>
+                    </div>
+                    <div>
+                      <p className="font-medium">Profile Picture</p>
+                      <p className="text-sm text-muted-foreground">
+                        Click to upload (max 2MB)
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={user?.email || ""}
+                      disabled
+                      className="bg-muted"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Email cannot be changed
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      id="username"
+                      type="text"
+                      placeholder="Enter your username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      This will be displayed on your public documents
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="bio">Bio / Description</Label>
+                    <Textarea
+                      id="bio"
+                      placeholder="Tell viewers a bit about yourself or your business..."
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      rows={3}
+                      maxLength={300}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {bio.length}/300 characters - shown below your documents
+                    </p>
+                  </div>
+
+                  <Button
+                    onClick={handleSaveProfile}
+                    disabled={savingProfile}
+                    className="w-full"
+                  >
+                    {savingProfile ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      "Save Profile"
+                    )}
+                  </Button>
+
+                  {/* Payment & Payout Quick Links */}
+                  <div className="border-t border-border pt-6 space-y-3">
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                      Payment & Payouts
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <Button
+                        variant="outline"
+                        className="justify-start gap-2 h-auto py-3"
+                        onClick={() => navigate("/payout-settings")}
+                      >
+                        <Settings className="h-4 w-4" />
+                        <div className="text-left">
+                          <p className="text-sm font-medium">Payout Settings</p>
+                          <p className="text-xs text-muted-foreground">
+                            {!payoutStatus
+                              ? "Connect your bank"
+                              : payoutStatus === "approved"
+                                ? "Approved ✓"
+                                : payoutStatus === "pending"
+                                  ? "Pending verification"
+                                  : "Needs attention"}
                           </p>
                         </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={user?.email || ""}
-                          disabled
-                          className="bg-muted"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Email cannot be changed
-                        </p>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="username">Username</Label>
-                        <Input
-                          id="username"
-                          type="text"
-                          placeholder="Enter your username"
-                          value={username}
-                          onChange={(e) => setUsername(e.target.value)}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          This will be displayed on your public documents
-                        </p>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="bio">Bio / Description</Label>
-                        <Textarea
-                          id="bio"
-                          placeholder="Tell viewers a bit about yourself or your business..."
-                          value={bio}
-                          onChange={(e) => setBio(e.target.value)}
-                          rows={3}
-                          maxLength={300}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          {bio.length}/300 characters - shown below your documents
-                        </p>
-                      </div>
-
-                      <Button 
-                        onClick={handleSaveProfile} 
-                        disabled={savingProfile}
-                        className="w-full"
-                      >
-                        {savingProfile ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Saving...
-                          </>
-                        ) : (
-                          "Save Profile"
-                        )}
                       </Button>
-
-                      {/* Payment & Payout Quick Links */}
-                      <div className="border-t border-border pt-6 space-y-3">
-                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Payment & Payouts</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <Button variant="outline" className="justify-start gap-2 h-auto py-3" onClick={() => navigate("/payout-settings")}>
-                            <Settings className="h-4 w-4" />
-                            <div className="text-left">
-                              <p className="text-sm font-medium">Payout Settings</p>
-                              <p className="text-xs text-muted-foreground">
-                                {!payoutStatus ? "Connect your bank" : payoutStatus === "approved" ? "Approved ✓" : payoutStatus === "pending" ? "Pending verification" : "Needs attention"}
-                              </p>
-                            </div>
-                          </Button>
-                          <Button variant="outline" className="justify-start gap-2 h-auto py-3" onClick={() => navigate("/earnings")}>
-                            <CreditCard className="h-4 w-4" />
-                            <div className="text-left">
-                              <p className="text-sm font-medium">Earnings & Withdrawals</p>
-                              <p className="text-xs text-muted-foreground">
-                                Balance: KES {((creatorBalance?.available_balance || 0) / 100).toLocaleString()}
-                              </p>
-                            </div>
-                          </Button>
+                      <Button
+                        variant="outline"
+                        className="justify-start gap-2 h-auto py-3"
+                        onClick={() => navigate("/earnings")}
+                      >
+                        <CreditCard className="h-4 w-4" />
+                        <div className="text-left">
+                          <p className="text-sm font-medium">
+                            Earnings & Withdrawals
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Balance: KES{" "}
+                            {(
+                              (creatorBalance?.available_balance || 0) / 100
+                            ).toLocaleString()}
+                          </p>
                         </div>
-                      </div>
+                      </Button>
+                    </div>
+                  </div>
 
-                      {/* Logout */}
-                      <div className="border-t border-border pt-6">
-                        <Button 
-                          variant="outline" 
-                          className="w-full justify-center gap-2 text-destructive hover:text-destructive-foreground hover:bg-destructive"
-                          onClick={handleSignOut}
-                        >
-                          <LogOut className="h-4 w-4" />
-                          Sign Out
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  {/* Logout */}
+                  <div className="border-t border-border pt-6">
+                    <Button
+                      variant="outline"
+                      className="w-full justify-center gap-2 text-destructive hover:text-destructive-foreground hover:bg-destructive"
+                      onClick={handleSignOut}
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sign Out
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           )}
         </div>
       </main>
 
-      <UploadPDFModal 
-        open={uploadModalOpen} 
+      <UploadPDFModal
+        open={uploadModalOpen}
         onOpenChange={setUploadModalOpen}
         onSuccess={fetchDocuments}
-        hasPaymentMethod={!!(profile?.mpesa_paybill || profile?.mpesa_till)}
+        hasPaymentMethod={!!(paystackSubaccount && payoutStatus === "approved")}
       />
 
       {/* Edit Document Modal */}
-      <UploadPDFModal 
-        open={editModalOpen} 
+      <UploadPDFModal
+        open={editModalOpen}
         onOpenChange={setEditModalOpen}
         onSuccess={fetchDocuments}
-        hasPaymentMethod={!!(profile?.mpesa_paybill || profile?.mpesa_till)}
+        hasPaymentMethod={!!(paystackSubaccount && payoutStatus === "approved")}
         editMode={true}
         documentData={editingDocument}
       />
@@ -932,12 +1115,13 @@ const Dashboard = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Document</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{deletingDocument?.title}"? This action cannot be undone.
+              Are you sure you want to delete "{deletingDocument?.title}"? This
+              action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleDeleteDocument}
               disabled={isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -983,4 +1167,3 @@ const NavButton = ({ icon: Icon, label, active, onClick }: NavButtonProps) => {
 };
 
 export default Dashboard;
-

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -41,19 +41,35 @@ const DonateModal = ({
 
   const handleDonate = async () => {
     if (!donationAmount || donationAmount < 50) {
-      toast({ title: "Invalid amount", description: "Minimum donation is KES 50", variant: "destructive" });
+      toast({
+        title: "Invalid amount",
+        description: "Minimum donation is KES 50",
+        variant: "destructive",
+      });
       return;
     }
     if (!name.trim()) {
-      toast({ title: "Name required", description: "Please enter your name", variant: "destructive" });
+      toast({
+        title: "Name required",
+        description: "Please enter your name",
+        variant: "destructive",
+      });
       return;
     }
     if (!email) {
-      toast({ title: "Email required", description: "Please enter your email for the receipt", variant: "destructive" });
+      toast({
+        title: "Email required",
+        description: "Please enter your email for the receipt",
+        variant: "destructive",
+      });
       return;
     }
     if (!phone) {
-      toast({ title: "Phone required", description: "Please enter your M-Pesa phone number", variant: "destructive" });
+      toast({
+        title: "Phone required",
+        description: "Please enter your M-Pesa phone number",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -68,15 +84,75 @@ const DonateModal = ({
         phone,
       };
 
-      const { data, error } = await supabase.functions.invoke("create-donation", { body });
+      const { data, error } = await supabase.functions.invoke(
+        "create-donation",
+        { body },
+      );
 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
       if (data?.authorization_url) {
+        // Open Paystack auth in a new tab and start polling purchases by reference
+        const ref = data.reference as string | undefined;
         window.open(data.authorization_url, "_blank");
-        onOpenChange(false);
-        toast({ title: "Redirecting to payment...", description: "Complete your donation in the new tab" });
+        toast({
+          title: "Redirecting to payment...",
+          description: "Complete your donation in the new tab",
+        });
+
+        if (ref) {
+          // Poll external ledger API for purchase status (Neon-backed)
+          let attempts = 0;
+          const maxAttempts = 40; // ~2 minutes
+          const ledgerUrl = import.meta.env.VITE_LEDGER_API_URL;
+          if (!ledgerUrl) {
+            toast({
+              title: "Config error",
+              description: "Ledger API URL not configured",
+              variant: "destructive",
+            });
+            onOpenChange(false);
+          } else {
+            pollRef.current = setInterval(async () => {
+              attempts += 1;
+              try {
+                const res = await fetch(
+                  `${ledgerUrl.replace(/\/$/, "")}/purchase/${encodeURIComponent(ref)}`,
+                );
+                if (res.ok) {
+                  const json = await res.json();
+                  if (json && json.status === "completed") {
+                    clearInterval(pollRef.current as any);
+                    pollRef.current = null;
+                    onOpenChange(false);
+                    window.dispatchEvent(
+                      new CustomEvent("donation:completed", { detail: json }),
+                    );
+                    toast({
+                      title: "Donation received",
+                      description: "Thank you for supporting the creator",
+                    });
+                  }
+                }
+
+                if (attempts >= maxAttempts) {
+                  clearInterval(pollRef.current as any);
+                  pollRef.current = null;
+                  toast({
+                    title: "Donation pending",
+                    description:
+                      "Payment not confirmed yet. It may take a moment to reflect.",
+                  });
+                }
+              } catch (err) {
+                console.error("Ledger polling failed", err);
+              }
+            }, 3000);
+          }
+        } else {
+          onOpenChange(false);
+        }
       }
     } catch (err: any) {
       console.error("Donation error:", err);
@@ -89,6 +165,16 @@ const DonateModal = ({
       setProcessingPayment(false);
     }
   };
+
+  const pollRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current as any);
+      }
+    };
+  }, []);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -113,7 +199,10 @@ const DonateModal = ({
                   key={amt}
                   variant={selectedAmount === amt ? "default" : "outline"}
                   size="sm"
-                  onClick={() => { setSelectedAmount(amt); setCustomAmount(""); }}
+                  onClick={() => {
+                    setSelectedAmount(amt);
+                    setCustomAmount("");
+                  }}
                 >
                   {amt.toLocaleString()}
                 </Button>
@@ -124,7 +213,10 @@ const DonateModal = ({
                 type="number"
                 placeholder="Custom amount (min KES 50)"
                 value={customAmount}
-                onChange={(e) => { setCustomAmount(e.target.value); setSelectedAmount(null); }}
+                onChange={(e) => {
+                  setCustomAmount(e.target.value);
+                  setSelectedAmount(null);
+                }}
                 min={50}
                 max={1000000}
               />
@@ -172,7 +264,14 @@ const DonateModal = ({
             variant="hero"
             className="w-full gap-2"
             onClick={handleDonate}
-            disabled={processingPayment || !donationAmount || donationAmount < 50 || !email || !phone || !name.trim()}
+            disabled={
+              processingPayment ||
+              !donationAmount ||
+              donationAmount < 50 ||
+              !email ||
+              !phone ||
+              !name.trim()
+            }
           >
             {processingPayment ? (
               <Loader2 className="h-4 w-4 animate-spin" />
