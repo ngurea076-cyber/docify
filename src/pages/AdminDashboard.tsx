@@ -17,7 +17,7 @@ import AdminSupportChat from "@/components/chat/AdminSupportChat";
 import PayoutDetailView from "@/components/admin/PayoutDetailView";
 
 const AdminDashboard = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, session } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdminRole();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -61,14 +61,22 @@ const AdminDashboard = () => {
   const handlePayoutAction = async (payoutId: string, action: "approve" | "reject") => {
     setActionLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("admin-update-payout", {
-        body: {
+      const fnUrl = `${import.meta.env.VITE_SUPABASE_URL.replace(/\/$/, "")}/functions/v1/admin-update-payout`;
+      const res = await fetch(fnUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({
           payout_id: payoutId,
           action,
           rejection_reason: action === "reject" ? rejectionReason : undefined,
-        },
+        }),
       });
-      if (error) throw error;
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload?.error || payload?.message || `Function returned ${res.status}`);
       toast({ title: "Success", description: `Payout ${action}d successfully` });
       setRejectDialog(null);
       setRejectionReason("");
@@ -83,14 +91,22 @@ const AdminDashboard = () => {
   const handleWithdrawalAction = async (withdrawalId: string, action: "approve" | "reject") => {
     setActionLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("process-withdrawal", {
-        body: {
+      const fnUrl = `${import.meta.env.VITE_SUPABASE_URL.replace(/\/$/, "")}/functions/v1/process-withdrawal`;
+      const res = await fetch(fnUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({
           withdrawal_id: withdrawalId,
           action,
           admin_note: action === "reject" ? rejectionReason : undefined,
-        },
+        }),
       });
-      if (error) throw error;
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload?.error || payload?.message || `Function returned ${res.status}`);
       toast({ title: "Success", description: `Withdrawal ${action}d successfully` });
       setRejectDialog(null);
       setRejectionReason("");
