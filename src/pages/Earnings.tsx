@@ -49,6 +49,7 @@ const Earnings = () => {
 
   const [balance, setBalance] = useState<any>(null);
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
   const [payoutStatus, setPayoutStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
@@ -118,7 +119,7 @@ const Earnings = () => {
       setBalance(balanceRes.data);
     }
 
-    const [withdrawalsRes, payoutRes] = await Promise.all([
+    const [withdrawalsRes, payoutRes, purchasesRes] = await Promise.all([
       supabase
         .from("withdrawals")
         .select("*")
@@ -129,9 +130,17 @@ const Earnings = () => {
         .select("status")
         .eq("user_id", user?.id)
         .maybeSingle(),
+      // Transaction history: purchases for documents owned by this user.
+      // RLS policy ensures only document owners can see these rows.
+      supabase
+        .from("purchases")
+        .select("id, amount, creator_earning, buyer_email, paystack_reference, created_at, documents(id, title)")
+        .eq("status", "completed")
+        .order("created_at", { ascending: false }),
     ]);
 
     setWithdrawals(withdrawalsRes.data || []);
+    setTransactions(purchasesRes.data || []);
     setPayoutStatus(payoutRes.data?.status || null);
     setLoading(false);
   };
@@ -357,6 +366,54 @@ const Earnings = () => {
                         <TableCell>{statusBadge(w.status)}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {w.admin_note || "-"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Transaction History (successful donations) */}
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>Transaction History</CardTitle>
+              <CardDescription>Successful donations made to your documents</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {transactions.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  No donations received yet
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Document</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Creator Earned</TableHead>
+                      <TableHead>Buyer</TableHead>
+                      <TableHead>Reference</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {transactions.map((t) => (
+                      <TableRow key={t.id}>
+                        <TableCell>
+                          {new Date(t.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {t.documents?.title || "-"}
+                        </TableCell>
+                        <TableCell>KES {(t.amount / 100).toLocaleString()}</TableCell>
+                        <TableCell>KES {(t.creator_earning / 100).toLocaleString()}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {t.buyer_email || "-"}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {t.paystack_reference || "-"}
                         </TableCell>
                       </TableRow>
                     ))}
