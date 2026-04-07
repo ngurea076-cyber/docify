@@ -4,6 +4,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Client as PGClient } from "https://deno.land/x/postgres@v0.17.0/mod.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -40,6 +41,25 @@ Deno.serve(async (req) => {
     }
     const { payout_id, action, rejection_reason } = body || {};
     if (!payout_id || !action) throw new Error("Missing required fields");
+
+    // Helper to perform UPDATEs via Postgres when available
+    const pgUrl = Deno.env.get("NEON_DATABASE_URL") || Deno.env.get("EXTERNAL_PG_URL");
+    const runPgUpdate = async (sql: string, params: any[]) => {
+      if (!pgUrl) return false;
+      const pg = new PGClient(pgUrl);
+      try {
+        await pg.connect();
+        await pg.queryObject(sql, ...params);
+        await pg.end();
+        return true;
+      } catch (err) {
+        console.error("PG update failed", err);
+        try {
+          await pg.end();
+        } catch {}
+        return false;
+      }
+    };
 
     if (action === "approve") {
       // Fetch payout details to create Paystack subaccount
@@ -82,51 +102,68 @@ Deno.serve(async (req) => {
         subaccountCode = subaccountData.data.subaccount_code;
       }
 
-      const { error } = await supabase
-        .from("creator_payouts")
-        .update({
-          status: "approved",
-          rejection_reason: null,
-          paystack_subaccount_code: subaccountCode,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", payout_id);
-      if (error) throw error;
+      // Try updating via Postgres first for direct DB writes, fallback to Supabase client
+      const sql = `UPDATE public.creator_payouts SET status = $1, rejection_reason = $2, paystack_subaccount_code = $3, updated_at = now() WHERE id = $4`;
+      const usedPg = await runPgUpdate(sql, ["approved", null, subaccountCode, payout_id]);
+      if (!usedPg) {
+        const { error } = await supabase
+          .from("creator_payouts")
+          .update({
+            status: "approved",
+            rejection_reason: null,
+            paystack_subaccount_code: subaccountCode,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", payout_id);
+        if (error) throw error;
+      }
     } else if (action === "reject") {
-      const { error } = await supabase
-        .from("creator_payouts")
-        .update({
-          status: "rejected",
-          rejection_reason: rejection_reason || "Application rejected",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", payout_id);
-      if (error) throw error;
+      const sql = `UPDATE public.creator_payouts SET status = $1, rejection_reason = $2, updated_at = now() WHERE id = $3`;
+      const usedPg = await runPgUpdate(sql, ["rejected", rejection_reason || "Application rejected", payout_id]);
+      if (!usedPg) {
+        const { error } = await supabase
+          .from("creator_payouts")
+          .update({
+            status: "rejected",
+            rejection_reason: rejection_reason || "Application rejected",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", payout_id);
+        if (error) throw error;
+      }
     } else if (action === "deactivate") {
       // Mark payout method as inactive and record admin + reason
-      const { error } = await supabase
-        .from("creator_payouts")
-        .update({
-          is_active: false,
-          deactivation_reason: rejection_reason || "Deactivated by admin",
-          deactivated_by: user.id,
-          deactivated_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", payout_id);
-      if (error) throw error;
+      const sql = `UPDATE public.creator_payouts SET is_active = false, deactivation_reason = $1, deactivated_by = $2, deactivated_at = now(), updated_at = now() WHERE id = $3`;
+      const usedPg = await runPgUpdate(sql, [rejection_reason || "Deactivated by admin", user.id, payout_id]);
+      if (!usedPg) {
+        const { error } = await supabase
+          .from("creator_payouts")
+          .update({
+            is_active: false,
+            deactivation_reason: rejection_reason || "Deactivated by admin",
+            deactivated_by: user.id,
+            deactivated_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", payout_id);
+        if (error) throw error;
+      }
     } else if (action === "reactivate") {
-      const { error } = await supabase
-        .from("creator_payouts")
-        .update({
-          is_active: true,
-          deactivation_reason: null,
-          deactivated_by: null,
-          deactivated_at: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", payout_id);
-      if (error) throw error;
+      const sql = `UPDATE public.creator_payouts SET is_active = true, deactivation_reason = null, deactivated_by = null, deactivated_at = null, updated_at = now() WHERE id = $1`;
+      const usedPg = await runPgUpdate(sql, [payout_id]);
+      if (!usedPg) {
+        const { error } = await supabase
+          .from("creator_payouts")
+          .update({
+            is_active: true,
+            deactivation_reason: null,
+            deactivated_by: null,
+            deactivated_at: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", payout_id);
+        if (error) throw error;
+      }
     } else {
       console.error("admin-update-payout: invalid action", { action, body });
       return new Response(
