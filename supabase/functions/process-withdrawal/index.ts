@@ -59,6 +59,7 @@ Deno.serve(async (req) => {
 
       const { data: payout } = await supabase.from("creator_payouts").select("*").eq("user_id", withdrawal.user_id).single();
       if (!payout) throw new Error("Payout details not found");
+      if (payout.is_active === false) throw new Error("Payout method is deactivated for this user");
 
       // Update status to processing
       await supabase.from("withdrawals").update({

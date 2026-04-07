@@ -75,6 +75,25 @@ Deno.serve(async (req) => {
         updated_at: new Date().toISOString(),
       }).eq("id", payout_id);
       if (error) throw error;
+    } else if (action === "deactivate") {
+      // Mark payout method as inactive and record admin + reason
+      const { error } = await supabase.from("creator_payouts").update({
+        is_active: false,
+        deactivation_reason: rejection_reason || "Deactivated by admin",
+        deactivated_by: user.id,
+        deactivated_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }).eq("id", payout_id);
+      if (error) throw error;
+    } else if (action === "reactivate") {
+      const { error } = await supabase.from("creator_payouts").update({
+        is_active: true,
+        deactivation_reason: null,
+        deactivated_by: null,
+        deactivated_at: null,
+        updated_at: new Date().toISOString(),
+      }).eq("id", payout_id);
+      if (error) throw error;
     } else {
       throw new Error("Invalid action");
     }

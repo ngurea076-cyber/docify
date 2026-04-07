@@ -30,6 +30,8 @@ const AdminDashboard = () => {
   // Rejection dialog
   const [rejectDialog, setRejectDialog] = useState<{ type: "payout" | "withdrawal"; id: string } | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [deactivateDialog, setDeactivateDialog] = useState<{ id: string } | null>(null);
+  const [deactivateReason, setDeactivateReason] = useState("");
 
   // Detail view
   const [viewPayout, setViewPayout] = useState<any>(null);
@@ -219,6 +221,13 @@ const AdminDashboard = () => {
                                   </Button>
                                 </>
                               )}
+                              {p.status === "approved" && (
+                                <>
+                                  <Button size="sm" variant="ghost" onClick={() => setDeactivateDialog({ id: p.id })} disabled={actionLoading}>
+                                    <Shield className="h-4 w-4 text-yellow-600" />
+                                  </Button>
+                                </>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -323,6 +332,49 @@ const AdminDashboard = () => {
               >
                 {actionLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
                 Reject
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Deactivate Dialog */}
+        <Dialog open={!!deactivateDialog} onOpenChange={() => setDeactivateDialog(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Deactivate Payout Method</DialogTitle>
+              <DialogDescription>Provide a reason for deactivating this payout method</DialogDescription>
+            </DialogHeader>
+            <Textarea
+              value={deactivateReason}
+              onChange={e => setDeactivateReason(e.target.value)}
+              placeholder="Reason for deactivation..."
+            />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeactivateDialog(null)}>Cancel</Button>
+              <Button
+                variant="destructive"
+                onClick={async () => {
+                  if (!deactivateDialog) return;
+                  setActionLoading(true);
+                  try {
+                    const { data, error } = await supabase.functions.invoke("admin-update-payout", {
+                      body: { payout_id: deactivateDialog.id, action: "deactivate", rejection_reason: deactivateReason }
+                    });
+                    if (error) throw error;
+                    toast({ title: "Success", description: "Payout deactivated" });
+                    setDeactivateDialog(null);
+                    setDeactivateReason("");
+                    fetchData();
+                  } catch (err: any) {
+                    toast({ title: "Error", description: err.message, variant: "destructive" });
+                  } finally {
+                    setActionLoading(false);
+                  }
+                }}
+                disabled={actionLoading}
+              >
+                {actionLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                Deactivate
               </Button>
             </DialogFooter>
           </DialogContent>

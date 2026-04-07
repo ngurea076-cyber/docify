@@ -72,6 +72,13 @@ const PayoutDetailView = ({ payout }: PayoutDetailViewProps) => {
           </div>
         )}
       </div>
+      {payout.deactivation_reason && (
+        <div className="pt-2 border-t border-border">
+          <p className="text-sm text-muted-foreground">Deactivated</p>
+          <p className="text-sm">{payout.deactivation_reason}</p>
+          <p className="text-xs text-muted-foreground">Deactivated at: {payout.deactivated_at ? new Date(payout.deactivated_at).toLocaleString() : "-"} by {payout.deactivated_by ? payout.deactivated_by.slice(0,8) + "..." : "-"}</p>
+        </div>
+      )}
     </div>
   );
 };
