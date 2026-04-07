@@ -324,8 +324,14 @@ const Dashboard = () => {
   };
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
+    try {
+      await signOut();
+      navigate("/");
+      // Force reload to ensure auth state and UI are cleared
+      window.location.reload();
+    } catch (err: any) {
+      toast({ title: "Sign out failed", description: err?.message || String(err), variant: "destructive" });
+    }
   };
 
   const handleCopyLink = (docSlug: string) => {
