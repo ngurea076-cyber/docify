@@ -427,6 +427,20 @@ const Dashboard = () => {
       }
     }
 
+    // If ledger didn't provide a balance, fall back to Supabase `creator_balances`
+    if (!creatorBalance && user) {
+      try {
+        const { data: supBal, error: supErr } = await supabase
+          .from("creator_balances")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (!supErr && supBal) setCreatorBalance(supBal);
+      } catch (err) {
+        console.error("Failed to fetch creator_balances from Supabase", err);
+      }
+    }
+
     const [payoutRes] = await Promise.all([
       supabase
         .from("creator_payouts")
